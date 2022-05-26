@@ -1,0 +1,24 @@
+[package]
+name = "embedded-ble-nrf5x"
+description = "100% rust BLE stack for nrf52832"
+authors = ["redengin <sholstei@yahoo.com>"]
+repository = "https://github.com/redengin/embedded-ble"
+categories = ["embedded", "no-std"]
+keywords = ["ble", "bluetooth", "nrf52832"]
+readme = "README.md"
+license = "LICENSE"
+edition = "2018"
+version = "0.0.1"
+
+[dependencies]
+
+[features]
+
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1 # better optimizations
+opt-level = "s"
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
