@@ -13,7 +13,9 @@ classDiagram
         L2CAP
     }
 
-    class HCI
+    class HCI {
+        Radio
+    }
 
     BLE --> HCI : uses
 ```
