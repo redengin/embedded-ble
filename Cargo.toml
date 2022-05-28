@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "embedded-ble",
+    "ble",
     "nrf5x-hci",
 ]
 
