@@ -11,8 +11,18 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
-nrf52832-pac = { version="0.11", optional=true, default-features = false }
-embedded-ble-nrf5x= { path="../nrf5x", optional=true }
+# nrf52832-pac = { version="0.11", optional=true, default-features = false }
+nrf5x-hci = { path="../nrf5x-hci", optional=true }
+
+[dev-dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+cortex-m-rtic = "1.0"
+panic-rtt-target = { version = "0.1", features = ["cortex-m"] }
+rtt-target = { version = "0.3", features = ["cortex-m"]}
+heapless = { version = "0.7", default-features = false }
+nrf52832-pac = { version="0.11", features=["rt"], default-features = false }
 
 [features]
-nrf52832 = ["dep:nrf52832-pac", "dep:embedded-ble-nrf5x"]
+# nrf52832 = ["dep:nrf52832-pac", "dep:nrf5x-hci"]
+nrf52832 = ["dep:nrf5x-hci"]

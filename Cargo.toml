@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "embedded-ble",
-    "nrf5x",
+    "nrf5x-hci",
 ]
 
 [profile.dev]

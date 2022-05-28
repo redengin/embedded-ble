@@ -1,5 +1,5 @@
 [package]
-name = "embedded-ble-nrf5x"
+name = "nrf5x-hci"
 description = "100% rust BLE stack for nrf52832"
 authors = ["redengin <sholstei@yahoo.com>"]
 repository = "https://github.com/redengin/embedded-ble"
@@ -11,14 +11,10 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
+nrf52832-pac = { version="0.11", optional=true, features=["rt"] }
 
 [features]
-
-[profile.dev]
-opt-level = "s"
-
-[profile.release]
-codegen-units = 1 # better optimizations
-opt-level = "s"
-debug = true # symbols are nice and they don't increase the size on Flash
-lto = true # better optimizations
+nrf52832 = ["dep:nrf52832-pac"]
+xxAA-package = []
+xxAB-package = []
+default = ["xxAB-package"]
