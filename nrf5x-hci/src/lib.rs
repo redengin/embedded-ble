@@ -128,7 +128,8 @@ impl Hci {
         self.radio.state.read().state()
     }
 
-    fn transmit(&mut self, buffer:&[u8]) {
+    pub fn transmit(&mut self, buffer:&[u8]) {
+        let buffer_ptr = buffer.as_ptr();
         unsafe {
             // "The CPU should reconfigure this pointer every time before the RADIO is started via
             // the START task."
