@@ -119,6 +119,8 @@ impl Hci {
             w.ready_start().enabled().end_disable().enabled()
         });
 
+        // TODO: enable TIFS to track time interval between packets
+
         Hci{ radio }
     }
 
@@ -126,5 +128,31 @@ impl Hci {
         self.radio.state.read().state()
     }
 
+    fn transmit(&mut self, buffer:&[u8]) {
+        unsafe {
+            // "The CPU should reconfigure this pointer every time before the RADIO is started via
+            // the START task."
+            self.radio
+                .packetptr
+                .write(|w| w.bits(buffer.as_ptr() as u32));
+
+            // Acknowledge left-over disable event
+            self.radio.events_disabled.reset(); // FIXME unnecessary, right?
+
+            // "Preceding reads and writes cannot be moved past subsequent writes."
+            // compiler_fence(Ordering::Release);
+
+            // ...and kick off the transmission
+            self.radio.tasks_txen.write(|w| w.bits(1));
+
+            // Then wait until disable event is triggered
+            while self.radio.events_disabled.read().bits() == 0 {}
+
+            // "Subsequent reads and writes cannot be moved ahead of preceding reads."
+            // compiler_fence(Ordering::Acquire);
+
+            // Now our `tx_buf` can be used again.
+        }
+    }
 
 }
