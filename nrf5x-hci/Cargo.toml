@@ -11,10 +11,24 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
+nrf51-pac = { version="0.11", optional=true, features=["rt"] }
+nrf52805-pac = { version="0.11", optional=true, features=["rt"] }
+nrf52810-pac = { version="0.11", optional=true, features=["rt"] }
+nrf52811-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52832-pac = { version="0.11", optional=true, features=["rt"] }
+nrf52833-pac = { version="0.11", optional=true, features=["rt"] }
+nrf52840-pac = { version="0.11", optional=true, features=["rt"] }
 
 [features]
+nrf51 = ["dep:nrf51-pac"]
+nrf52805 = ["dep:nrf52805-pac"]
+nrf52810 = ["dep:nrf52810-pac"]
+nrf52811 = ["dep:nrf52811-pac"]
 nrf52832 = ["dep:nrf52832-pac"]
+nrf52833 = ["dep:nrf52833-pac"]
+nrf52840 = ["dep:nrf52840-pac"]
 xxAA-package = []
 xxAB-package = []
 default = ["xxAB-package"]
+
+

@@ -1,7 +1,22 @@
 Bluetooth® Low Energy stack for embedded Rust
 ================================================================================
 
-![architecture](https://software-dl.ti.com/lprf/simplelink_cc2640r2_sdk/1.00.00.22/exports/docs/blestack/html/_images/image4.jpeg)
+<!-- ![architecture](https://software-dl.ti.com/lprf/simplelink_cc2640r2_sdk/1.00.00.22/exports/docs/blestack/html/_images/image4.jpeg) -->
+```mermaid
+classDiagram
+    direction LR
+    class BLE {
+        GAP
+        GATT
+        SecurityManager
+        ATT
+        L2CAP
+    }
+
+    class HCI
+
+    BLE --> HCI : uses
+```
 
 `Host` is implemented in [`ble`](ble/). This implementation is hardware agnostic.
 
