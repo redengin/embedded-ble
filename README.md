@@ -1,7 +1,11 @@
 Bluetooth® Low Energy stack for embedded Rust
 ================================================================================
+Implemented per the [BlueTooth](https://www.bluetooth.com/specifications/specs/)
+specifications. The specifications identify both protocol details as well as
+test procedures. Leveraging the Rust testing framework, the **test procedures are
+implemented at the same time as the implementation** - producing a qualifiable
+Bluetooth implementation.
 
-<!-- ![architecture](https://software-dl.ti.com/lprf/simplelink_cc2640r2_sdk/1.00.00.22/exports/docs/blestack/html/_images/image4.jpeg) -->
 ```mermaid
 classDiagram
     direction LR
@@ -20,10 +24,10 @@ classDiagram
     BLE --> HCI : uses
 ```
 
-`Host` is implemented in [`ble`](ble/). This implementation is hardware agnostic.
+<!-- `Host` is implemented in [`ble`](ble/). This implementation is hardware agnostic.
 
 `Controller/HCI` is implemented in `*-hci`
-* [nrf52x-hci](nrf5x-hci/) supports [nrf52 family](https://github.com/nrf-rs/nrf-hal)
+* [nrf52x-hci](nrf5x-hci/) supports [nrf52 family](https://github.com/nrf-rs/nrf-hal) -->
 
 
 Demo
@@ -34,3 +38,13 @@ you wish to run on other targets, you'll need to modify accordingly.
 ```sh
 cargo embed --example rtic_demo --features nrf52832 --target thumbv7em-none-eabihf
 ```
+
+
+
+
+
+
+
+
+
+
