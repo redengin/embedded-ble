@@ -7,21 +7,24 @@ implemented at the same time as the implementation** - producing a qualifiable
 Bluetooth implementation.
 
 ```mermaid
-classDiagram
-    direction LR
-    class BLE {
-        GAP
-        GATT
-        SecurityManager
-        ATT
-        L2CAP
+erDiagram
+    GATT ||--o{ATT: uses
+    ATT ||--o{L2CAP : uses
+    Security ||--o{L2CAP : uses
+    L2CAP ||--o{ Logical: uses
+    L2CAP {
+        enum channels
     }
-
-    class HCI {
-        Radio
+    Logical {
+        enum links
+        enum transports
     }
-
-    BLE --> HCI : uses
+    Logical ||--o{ Physical: uses
+    Physical {
+        enum links
+        enum channels
+        enum transports
+    }
 ```
 
 <!-- `Host` is implemented in [`ble`](ble/). This implementation is hardware agnostic.
