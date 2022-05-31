@@ -6,6 +6,17 @@ test procedures. Leveraging the Rust testing framework, the **test procedures ar
 implemented at the same time as the implementation** - producing a qualifiable
 Bluetooth implementation.
 
+Demo
+================================================================================
+The repos's [Embed.toml](Embed.toml) is setup for `chip = "nRF52832_xxAA"` - if
+you wish to run on other targets, you'll need to modify accordingly.
+
+```sh
+cargo embed --example rtic_demo --features nrf52832 --target thumbv7em-none-eabihf
+```
+
+Architecture
+================================================================================
 ```mermaid
 erDiagram
     GATT ||--o{ATT: uses
@@ -25,21 +36,6 @@ erDiagram
         enum channels
         enum transports
     }
-```
-
-<!-- `Host` is implemented in [`ble`](ble/). This implementation is hardware agnostic.
-
-`Controller/HCI` is implemented in `*-hci`
-* [nrf52x-hci](nrf5x-hci/) supports [nrf52 family](https://github.com/nrf-rs/nrf-hal) -->
-
-
-Demo
-================================================================================
-The repos's [Embed.toml](Embed.toml) is setup for `chip = "nRF52832_xxAA"` - if
-you wish to run on other targets, you'll need to modify accordingly.
-
-```sh
-cargo embed --example rtic_demo --features nrf52832 --target thumbv7em-none-eabihf
 ```
 
 
