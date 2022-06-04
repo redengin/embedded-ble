@@ -130,7 +130,9 @@ mod tests {
                 Ok(length) => {
                     const HEADER_LENGTH:usize = 4;
                     assert_eq!(HEADER_LENGTH, length);
-                    let HEADER:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                    const HEADER:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                    //                                  ^..^ - little endian payload length
+                    //                                        ^..^ - little endian channel CID
                     assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
                 }
                 Err(_) => assert!(false),
@@ -144,7 +146,9 @@ mod tests {
                 Ok(length) => {
                     const HEADER_LENGTH:usize = 4;
                     assert_eq!(HEADER_LENGTH + payload.len(), length);
-                    let HEADER:[u8; HEADER_LENGTH] = [100, 0, 4, 0];
+                    const HEADER:[u8; HEADER_LENGTH] = [100, 0, 4, 0];
+                    //                                  ^....^ - little endian payload length
+                    //                                          ^..^ - little endian channel CID
                     assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
                     assert_eq!(payload[HEADER_LENGTH .. payload.len()], buffer[HEADER_LENGTH .. payload.len()]);
                 }
