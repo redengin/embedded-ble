@@ -46,8 +46,26 @@ impl Channel {
     }
 }
 
+// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.376991
+struct L2CAP_command {
+    code: u8,
+    identifier: u8,
+    length: usize,
+    data: [u8],
+}
+const L2CAP_COMMAND_REJECT_RSP_code:u8 = 0x01;
+const L2CAP_CONNECTION_REQ_code:u8 = 0x02;
+const L2CAP_CONNECTION_RSP_code:u8 = 0x03;
+const L2CAP_CONFIGURATION_REQ_code:u8 = 0x04;
+const L2CAP_CONFIGURATION_RSP_code:u8 = 0x05;
+const L2CAP_DISCONNECTION_REQ_code:u8 = 0x06;
+const L2CAP_DISCONNECTION_RSP_code:u8 = 0x07;
+const L2CAP_ECHO_REQ_code:u8 = 0x08;
+const L2CAP_ECHO_RSP_code:u8 = 0x09;
+
+
 pub struct Builder<'a> {
-    channel: Channel,
+    channel: &'a Channel,
     buffer: &'a mut [u8],
     payload_length: usize,
     /// connectionless channels use PSM
@@ -56,7 +74,7 @@ pub struct Builder<'a> {
 const MIN_PSM_LENGTH:usize = 2;
 
 impl<'a> Builder<'a> {
-    fn new(channel: Channel, buffer:&'a mut [u8]) -> Self {
+    fn new(channel: &'a Channel, buffer:&'a mut [u8]) -> Self {
         // set the frame channel
         buffer[2 .. 4].copy_from_slice(&channel.cid.to_le_bytes());
         Self {
@@ -118,43 +136,37 @@ impl<'a> Builder<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_build_connection_oriented() {
         let mut buffer:[u8; 1024] = [0; 1024];
+        let channel = Channel::ATT;
+        assert!(channel.is_connection_oriented());
         // test without payload
-        {
-            let channel = Channel::ATT;
-            assert!(channel.is_connection_oriented());
-            match Builder::new(channel, &mut buffer).build() {
-                Ok(length) => {
-                    const HEADER_LENGTH:usize = 4;
-                    assert_eq!(HEADER_LENGTH, length);
-                    const HEADER:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
-                    //                                  ^..^ - little endian payload length
-                    //                                        ^..^ - little endian channel CID
-                    assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
-                }
-                Err(_) => assert!(false),
-            };
-        }
+        match Builder::new(&channel, &mut buffer).build() {
+            Ok(length) => {
+                const HEADER_LENGTH:usize = 4;
+                assert_eq!(HEADER_LENGTH, length);
+                const HEADER:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                //                                  ^..^ - little endian payload length
+                //                                        ^..^ - little endian channel CID
+                assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
+            }
+            Err(_) => assert!(false),
+        };
         // test with payload
-        {
-            let channel = Channel::ATT;
-            let payload:[u8;100] = [0xa5; 100];
-            match Builder::new(channel, &mut buffer).payload(&payload).build() {
-                Ok(length) => {
-                    const HEADER_LENGTH:usize = 4;
-                    assert_eq!(HEADER_LENGTH + payload.len(), length);
-                    const HEADER:[u8; HEADER_LENGTH] = [100, 0, 4, 0];
-                    //                                  ^....^ - little endian payload length
-                    //                                          ^..^ - little endian channel CID
-                    assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
-                    assert_eq!(payload[HEADER_LENGTH .. payload.len()], buffer[HEADER_LENGTH .. payload.len()]);
-                }
-                Err(_) => assert!(false),
-            };
-        }
+        let payload:[u8;100] = [0xa5; 100];
+        match Builder::new(&channel, &mut buffer).payload(&payload).build() {
+            Ok(length) => {
+                const HEADER_LENGTH:usize = 4;
+                assert_eq!(HEADER_LENGTH + payload.len(), length);
+                const HEADER:[u8; HEADER_LENGTH] = [100, 0, 4, 0];
+                //                                  ^....^ - little endian payload length
+                //                                          ^..^ - little endian channel CID
+                assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
+                assert_eq!(payload[HEADER_LENGTH .. payload.len()], buffer[HEADER_LENGTH .. payload.len()]);
+            }
+            Err(_) => assert!(false),
+        };
     }
 
 }
