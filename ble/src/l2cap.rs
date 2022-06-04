@@ -37,7 +37,6 @@ impl Channel {
 
     /// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.565154
     pub fn is_connectionless(&self) -> bool {
-        self.is_signaling() ||
         matches!(self.cid, 0x0002)
     }
 
@@ -58,7 +57,8 @@ const MIN_PSM_LENGTH:usize = 2;
 
 impl<'a> Builder<'a> {
     fn new(channel: Channel, buffer:&'a mut [u8]) -> Self {
-        buffer[2..3].copy_from_slice(&channel.cid.to_le_bytes());
+        // set the frame channel
+        buffer[2..4].copy_from_slice(&channel.cid.to_le_bytes());
         Self {
             channel,
             buffer,
@@ -67,51 +67,80 @@ impl<'a> Builder<'a> {
         }
     }
 
-    fn psm(&'a mut self, psm: &[u8]) -> Result<&'a Self, &'static str> {
+    fn psm(&'a mut self, psm: &[u8]) -> &'a mut Self {
         if self.channel.is_connectionless() {
-            return Err("connectionless channels don't use PSM")
+            panic!("connectionless channels don't use PSM")
         }
         self.psm_length = psm.len();
         self.buffer[4..].copy_from_slice(&psm);
-        Ok(self)
+        self
     }
 
-    fn payload(&'a mut self, payload: &[u8]) -> Result<&'a Self, &'static str> {
+    fn payload(&'a mut self, payload: &[u8]) -> &'a mut Self {
+        // copy in the payload
         self.payload_length = payload.len();
         if self.channel.is_connection_oriented() {
             self.buffer[4..].copy_from_slice(&payload);
         }
         else {
             if self.psm_length < MIN_PSM_LENGTH {
-                return Err("for connectionless channels, the PSM must be set before the payload")
+                panic!("for connectionless channels, the PSM must be set before the payload")
             }
             let index = 4 + self.psm_length;
             self.buffer[index..].copy_from_slice(&payload);
         }
 
-        let pdu_length = if self.channel.is_connection_oriented() {self.payload_length}
-                                else {self.psm_length + self.payload_length};
-        if pdu_length > u16::MAX as usize { return Err("packet too large") }
-        let pdu_length_u16 = pdu_length as u16;
-        self.buffer[0..1].copy_from_slice(&pdu_length_u16.to_le_bytes());
-        Ok(self)
+        // set the frame size
+        let pdu_length = self.psm_length + self.payload_length;
+        if pdu_length > u16::MAX as usize { panic!("packet too large") }
+        self.buffer[0..1].copy_from_slice(&(pdu_length as u16).to_le_bytes());
+        self
     }
 
     /// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.366340
-    fn build(&mut self) -> Result<&[u8], &'static str> {
-        Ok(self.buffer)
+    fn build(&mut self) -> Result<usize, &'static str> {
+        const HEADER_LENGTH:usize = 4;
+        let frame_length = HEADER_LENGTH + self.psm_length + self.payload_length;
+        Ok(frame_length)
     }
 }
 
+// FIXME implement S-frame and I-frame support https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.366399
+
+// FIXME implement K-frame https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.618632
 
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
 
     #[test]
-    fn test_connection_oriented() {
-
+    fn test_build_connection_oriented() {
+        let channel = Channel::ATT;
+        assert!(channel.is_connection_oriented());
+        let mut buffer:[u8; 1024] = [0; 1024];
+        // test without payload
+        match Builder::new(channel, &mut buffer).build() {
+            Ok(length) => {
+                const HEADER_LENGTH:usize = 4;
+                assert_eq!(HEADER_LENGTH, length);
+                let DATA:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                assert_eq!(DATA, buffer[0..4]);
+            }
+            Err(_) => assert!(false),
+        };
+        // test with payload
+        let payload:[u8;100] = [0xa5; 100];
+        match Builder::new(channel, &mut buffer).payload(&payload).build() {
+            Ok(length) => {
+                const HEADER_LENGTH:usize = 4;
+                assert_eq!(HEADER_LENGTH, length);
+                let DATA:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                assert_eq!(DATA, buffer[0..4]);
+            }
+            Err(_) => assert!(false),
+        };
+        
     }
 
 }
