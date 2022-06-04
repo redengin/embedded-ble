@@ -15,6 +15,12 @@ you wish to run on other targets, you'll need to modify accordingly.
 cargo embed --example rtic_demo --features nrf52832 --target thumbv7em-none-eabihf
 ```
 
+Unit Testing
+================================================================================
+```sh
+cargo test --lib
+```
+
 Architecture
 ================================================================================
 ```mermaid

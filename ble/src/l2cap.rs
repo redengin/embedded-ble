@@ -1,4 +1,3 @@
-
 /// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.1294570
 pub struct Channel { cid: u16, }
 impl Channel {
@@ -102,4 +101,17 @@ impl<'a> Builder<'a> {
     fn build(&mut self) -> Result<&[u8], &'static str> {
         Ok(self.buffer)
     }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+
+    #[test]
+    fn test_connection_oriented() {
+
+    }
+
 }

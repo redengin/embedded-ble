@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[cfg(feature = "nrf51")]
 use nrf51_pac as pac;
