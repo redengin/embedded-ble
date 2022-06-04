@@ -58,7 +58,7 @@ const MIN_PSM_LENGTH:usize = 2;
 impl<'a> Builder<'a> {
     fn new(channel: Channel, buffer:&'a mut [u8]) -> Self {
         // set the frame channel
-        buffer[2..4].copy_from_slice(&channel.cid.to_le_bytes());
+        buffer[2 .. 4].copy_from_slice(&channel.cid.to_le_bytes());
         Self {
             channel,
             buffer,
@@ -72,7 +72,9 @@ impl<'a> Builder<'a> {
             panic!("connectionless channels don't use PSM")
         }
         self.psm_length = psm.len();
-        self.buffer[4..].copy_from_slice(&psm);
+        let start_index = 4;
+        let end_index = start_index + psm.len();
+        self.buffer[start_index .. end_index].copy_from_slice(&psm);
         self
     }
 
@@ -80,25 +82,28 @@ impl<'a> Builder<'a> {
         // copy in the payload
         self.payload_length = payload.len();
         if self.channel.is_connection_oriented() {
-            self.buffer[4..].copy_from_slice(&payload);
+            let start_index = 4;
+            let end_index = start_index + payload.len();
+            self.buffer[start_index .. end_index].copy_from_slice(&payload);
         }
         else {
             if self.psm_length < MIN_PSM_LENGTH {
                 panic!("for connectionless channels, the PSM must be set before the payload")
             }
-            let index = 4 + self.psm_length;
-            self.buffer[index..].copy_from_slice(&payload);
+            let start_index = 4 + self.psm_length;
+            let end_index = start_index + payload.len();
+            self.buffer[start_index .. end_index].copy_from_slice(&payload);
         }
 
         // set the frame size
         let pdu_length = self.psm_length + self.payload_length;
         if pdu_length > u16::MAX as usize { panic!("packet too large") }
-        self.buffer[0..1].copy_from_slice(&(pdu_length as u16).to_le_bytes());
+        self.buffer[0 .. 2].copy_from_slice(&(pdu_length as u16).to_le_bytes());
         self
     }
 
     /// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G24.366340
-    fn build(&mut self) -> Result<usize, &'static str> {
+    fn build(&self) -> Result<usize, &'static str> {
         const HEADER_LENGTH:usize = 4;
         let frame_length = HEADER_LENGTH + self.psm_length + self.payload_length;
         Ok(frame_length)
@@ -116,31 +121,36 @@ mod tests {
 
     #[test]
     fn test_build_connection_oriented() {
-        let channel = Channel::ATT;
-        assert!(channel.is_connection_oriented());
         let mut buffer:[u8; 1024] = [0; 1024];
         // test without payload
-        match Builder::new(channel, &mut buffer).build() {
-            Ok(length) => {
-                const HEADER_LENGTH:usize = 4;
-                assert_eq!(HEADER_LENGTH, length);
-                let DATA:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
-                assert_eq!(DATA, buffer[0..4]);
-            }
-            Err(_) => assert!(false),
-        };
+        {
+            let channel = Channel::ATT;
+            assert!(channel.is_connection_oriented());
+            match Builder::new(channel, &mut buffer).build() {
+                Ok(length) => {
+                    const HEADER_LENGTH:usize = 4;
+                    assert_eq!(HEADER_LENGTH, length);
+                    let HEADER:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
+                    assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
+                }
+                Err(_) => assert!(false),
+            };
+        }
         // test with payload
-        let payload:[u8;100] = [0xa5; 100];
-        match Builder::new(channel, &mut buffer).payload(&payload).build() {
-            Ok(length) => {
-                const HEADER_LENGTH:usize = 4;
-                assert_eq!(HEADER_LENGTH, length);
-                let DATA:[u8; HEADER_LENGTH] = [0, 0, 4, 0];
-                assert_eq!(DATA, buffer[0..4]);
-            }
-            Err(_) => assert!(false),
-        };
-        
+        {
+            let channel = Channel::ATT;
+            let payload:[u8;100] = [0xa5; 100];
+            match Builder::new(channel, &mut buffer).payload(&payload).build() {
+                Ok(length) => {
+                    const HEADER_LENGTH:usize = 4;
+                    assert_eq!(HEADER_LENGTH + payload.len(), length);
+                    let HEADER:[u8; HEADER_LENGTH] = [100, 0, 4, 0];
+                    assert_eq!(HEADER, buffer[.. HEADER_LENGTH]);
+                    assert_eq!(payload[HEADER_LENGTH .. payload.len()], buffer[HEADER_LENGTH .. payload.len()]);
+                }
+                Err(_) => assert!(false),
+            };
+        }
     }
 
 }
