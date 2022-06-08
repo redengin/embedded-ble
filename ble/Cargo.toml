@@ -11,6 +11,7 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
+heapless = "0.7"
 # nrf5x-hci = { path="../nrf5x-hci", optional=true }
 
 [dev-dependencies]
