@@ -1,43 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
-use heapless::Vec;
-
-const MAX_GATT_SERVICE_COUNT:usize = 100;
-struct GattServer {
-    services: Vec<GattService, MAX_GATT_SERVICE_COUNT>,
-}
-
-impl GattServer {
-    pub fn new() -> Self {
-        Self {
-            services: Vec::new(),
-        }
-    }
-
-    pub fn add(&mut self, service:GattService) -> bool {
-        if let Some(_) = self.services.iter().position(|s| s.uuid == service.uuid) {
-            panic!("attempt to add a GattService with the same uuid")
-        }
-        self.services.push(service).is_ok()
-    }
-
-    pub fn remove(&mut self, uuid:u32) -> Option<GattService> {
-        if let Some(index) = self.services.iter().position(|s| s.uuid == uuid) {
-            return Some(self.services.swap_remove(index))
-        }
-        None
-    }
-}
-
-
-
-struct GattService {
-    /// https://www.bluetooth.org/docman/handlers/downloaddoc.ashx?doc_id=478726#G25.598629
-    uuid: u32,
-    service_type: GattServiceType,
-}
-enum GattServiceType {PRIMARY, SECONDARY}
-
+pub mod gatt;
 
 
 
