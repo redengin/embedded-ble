@@ -23,13 +23,7 @@ pub struct BaseGattCharacteristic<'a> {
     uuid: u16,
     value: &'a [u8],
 }
-trait Read {
-    fn read() -> usize;
-}
-
 const MAX_GATT_VALUE_LENGTH:usize = 512;
-impl Read for ClientReadable {
-}
 
 
 #[cfg(test)]
@@ -38,20 +32,5 @@ mod tests {
 
     #[test]
     fn test_gatt_server() {
-        let gatt_server = GattServer {
-            services: &[
-                GattService {
-                    uuid: 0,
-                    service_type: GattServiceType::PRIMARY,
-                    characteristics: &[
-                        GattCharacteristic::Readable(BaseGattCharacteristic{
-                            uuid: 0,
-                            value: &[0,100],
-                        }),
-                    ],
-                    services: None,
-                },
-            ],
-        };
     }
 }
