@@ -65,7 +65,7 @@ mod app {
         }
     }
 
-    /// schedule for lowest priority (1)
+    /// schedule for **lowest** priority (1)
     #[task(shared=[ble], priority=1)]
     fn ble_advertiser(mut cx:ble_advertiser::Context) {
         cx.shared.ble.lock(|ble| {
@@ -77,7 +77,7 @@ mod app {
         ble_advertiser::spawn().unwrap();
     }
 
-    /// schedule for high priority
+    /// schedule for **highest** priority
     #[task(binds=RADIO, shared=[ble], priority=8)]
     fn ble_handler(mut cx:ble_handler::Context) {
         cx.shared.ble.lock(|ble| {
@@ -88,6 +88,7 @@ mod app {
         });
     }
 
+    /// schedule for high priority (apps responsive to state changes)
     #[task(shared=[ble], priority=7)]
     fn ble_worker(mut cx:ble_worker::Context) {
         cx.shared.ble.lock(|ble| {
