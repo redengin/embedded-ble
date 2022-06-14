@@ -74,7 +74,7 @@ mod app {
                 ble.advertise();
             }
         });
-        ble_advertiser::spawn().ok();
+        ble_advertiser::spawn().unwrap();
     }
 
     /// schedule for high priority
