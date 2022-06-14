@@ -1,23 +1,18 @@
 #![cfg_attr(not(test), no_std)]
 
+// choose the hardware pac
 #[cfg(feature = "nrf51")]
 use nrf51_pac as pac;
-
 #[cfg(feature = "nrf52805")]
 use nrf52805_pac as pac;
-
 #[cfg(feature = "nrf52810")]
 use nrf52810_pac as pac;
-
 #[cfg(feature = "nrf52811")]
 use nrf52811_pac as pac;
-
 #[cfg(feature = "nrf52832")]
 use nrf52832_pac as pac;
-
 #[cfg(feature = "nrf52833")]
 use nrf52833_pac as pac;
-
 #[cfg(feature = "nrf52840")]
 use nrf52840_pac as pac;
 

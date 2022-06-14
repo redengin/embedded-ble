@@ -5,33 +5,54 @@ use panic_rtt_target;
 
 use rtic::app;
 
+// choose the hardware pac
+#[cfg(feature = "nrf51")]
+use nrf51_hal::{pac};
+#[cfg(feature = "nrf52805")]
+use nrf52805_hal::{pac};
+#[cfg(feature = "nrf52810")]
+use nrf52810_hal::{pac};
+#[cfg(feature = "nrf52811")]
+use nrf52811_hal::{pac};
 #[cfg(feature = "nrf52832")]
-use nrf52832_pac as pac;
+use nrf52832_hal::{pac};
+#[cfg(feature = "nrf52833")]
+use nrf52833_hal::{pac};
+#[cfg(feature = "nrf52840")]
+use nrf52840_hal::{pac};
 
-#[app(device = crate::pac)]
+#[app(device=crate::pac, dispatchers=[SWI0_EGU0, SWI1_EGU1])]
 mod app {
     use rtt_target::{rtt_init_print, rprintln};
-    // use embedded_ble::Ble;
+    // choose the hardware hal
+    #[cfg(feature = "nrf52832")]
+    use nrf52832_hal::{self as hal};
+    use bluetooth_hci::Controller;
+
+    use embedded_ble::Ble;
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        ble: Ble,
+    }
 
     #[local]
     struct Local {
-        // ble: Ble,
     }
 
     #[init]
-    fn init(_: init::Context) -> (Shared, Local, init::Monotonics) {
+    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         rtt_init_print!();
         rprintln!("init");
 
-        // const ACCESS_ADDRESS:u32 = 0xDEADBEEF;
-        // let ble = Ble::new(ACCESS_ADDRESS);
+        // let hci = nrf5x_hci::Hci.new();
+        // let ble = Ble::new(hci);
+        let ble = Ble::new();
 
-        (Shared {},
+        (Shared {
+            ble,
+         },
          Local {
-            // ble,
          },
          init::Monotonics())
     }
@@ -44,9 +65,34 @@ mod app {
         }
     }
 
-    // #[task(binds=RADIO, local=[ble], priority=3)]
-    // fn ble_task(ctx : ble_task::Context) {
+    /// schedule for lowest priority (1)
+    #[task(shared=[ble], priority=1)]
+    fn ble_advertiser(mut cx:ble_advertiser::Context) {
+        cx.shared.ble.lock(|ble| {
+            // only advertise if we're not connected
+            if ! ble.is_connected() {
+                ble.advertise();
+            }
+        });
+        ble_advertiser::spawn().ok();
+    }
 
-    // }
+    /// schedule for high priority
+    #[task(binds=RADIO, shared=[ble], priority=8)]
+    fn ble_handler(mut cx:ble_handler::Context) {
+        cx.shared.ble.lock(|ble| {
+            let has_work = ble.radio_event();
+            if has_work {
+                ble_worker::spawn().ok();
+            }
+        });
+    }
+
+    #[task(shared=[ble], priority=7)]
+    fn ble_worker(mut cx:ble_worker::Context) {
+        cx.shared.ble.lock(|ble| {
+            ble.work();
+        });
+    }
 
 }
