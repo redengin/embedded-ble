@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-use panic_rtt_target;
+use panic_rtt_target as _;
 
 use rtic::app;
 
@@ -66,6 +66,7 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {
             // go into deep sleep
+            rprintln!("sleeping...");
             cortex_m::asm::wfe();
         }
     }
@@ -76,6 +77,7 @@ mod app {
         cx.shared.ble.lock(|ble| {
             // only advertise if we're not connected
             if ! ble.is_connected() {
+                rprintln!("advertising...");
                 ble.advertise();
             }
         });
@@ -85,6 +87,7 @@ mod app {
     /// schedule for **highest** priority
     #[task(binds=RADIO, shared=[ble], priority=8)]
     fn ble_handler(mut cx:ble_handler::Context) {
+        rprintln!("handling radio event...");
         cx.shared.ble.lock(|ble| {
             let has_work = ble.radio_event();
             if has_work {
@@ -97,10 +100,10 @@ mod app {
     #[task(shared=[ble], priority=7)]
     fn ble_worker(mut cx:ble_worker::Context) {
         cx.shared.ble.lock(|ble| {
+            rprintln!("working...");
             ble.work();
         });
     }
-
 }
 
 
@@ -116,7 +119,7 @@ pub struct MonoRtc<T: InstanceRtc> {
 }
 
 impl<T: InstanceRtc> MonoRtc<T> {
-    pub fn new(rtc: T) -> Self {
+    pub(crate) fn new(rtc: T) -> Self {
         unsafe { rtc.prescaler.write(|w| w.bits(0)) };
 
         MonoRtc { overflow: 0, rtc }
