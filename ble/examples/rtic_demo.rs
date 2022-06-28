@@ -38,7 +38,7 @@ mod app {
 
     #[shared]
     struct Shared {
-        ble: Ble,
+        ble: Ble<'static>,
     }
 
     #[local]
@@ -52,7 +52,7 @@ mod app {
 
         // let hci = nrf5x_hci::Hci.new();
         // let ble = Ble::new(hci);
-        let ble = Ble::new();
+        let ble = Ble::new("hello world");
 
         (Shared {
             ble,

@@ -1,53 +1,56 @@
+use core::mem::MaybeUninit;
+
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1070566
 /// https://www.novelbits.io/bluetooth-low-energy-advertisements-part-1/
 /// note: the order of these properties identify the priority for inclusion in the 
 ///     advertisement (unless there is an explicit comment on the property).
-struct Advertisement<'a> {
-    /// local_name will be sent if it will fit, otherwise short_local_name will be used
-    local_name: Option<&'a str>,
-    /// short_local_name will be sent if it will fit or local_name doesn't fit
-    short_local_name: Option<&'a str>,
-    uri: Option<&'a str>,
-
-    services_uuid16: Option<&'a [u16]>,
-    services_uuid32: Option<&'a [u32]>,
-    services_uuid128: Option<&'a [u128]>,
-    // TODO determine if service_data and service_uuid should be combined as a Service type
-        // service_data: Option<u8>,
+#[derive(Default)]
+pub(crate) struct Advertisement<'a> {
+    pub local_name: Option<&'a str>,
+    pub short_local_name: Option<&'a str>,
+    pub uri: Option<&'a str>,
 
     /// see enum Flags
-    flags: Option<u8>,
-    tx_power_level: Option<i8>,
-    advertising_interval: Option<u16>,
-    /// note: only 24 bits are used
-    advertising_interval_long: Option<u32>,
+    pub flags: Option<u8>,
 
-    manufacturer_data: Option<&'a [u8]>,
+    pub tx_power_level: Option<i8>,
+
+    pub advertising_interval: Option<u16>,
+    /// note: only 24 bits are used
+    pub advertising_interval_long: Option<u32>,
+    pub peripheral_connection_interval_range: Option<PeripheralConnectionIntervalRange>,
+
+    pub manufacturer_data: Option<&'a [u8]>,
 
     /// https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
-    appearance: Option<u16>,
+    pub appearance: Option<u16>,
+
+    pub services_uuid16: Option<&'a [u16]>,
+    pub services_uuid32: Option<&'a [u32]>,
+    pub services_uuid128: Option<&'a [u128]>,
+    // TODO determine if service_data and service_uuid should be combined as a Service type
+        // service_data: Option<u8>,
 
     // TODO implement secure simple pairing
         // secure_simple_pairing_oob: Option<TODO>,
         // security_manager_oob: Option<TODO>,
         // security_manager_tk_value: Option<TODO>,
 
-    peripheral_connection_interval_range: Option<PeripheralConnectionIntervalRange>,
+// TODO support mesh
+    // services_solicitation_uuid16: Option<&'a [u16]>,
+    // services_solicitation_uuid32: Option<&'a [u32]>,
+    // services_solicitation_uuid128: Option<&'a [u128]>,
 
-    services_solicitation_uuid16: Option<&'a [u16]>,
-    services_solicitation_uuid32: Option<&'a [u32]>,
-    services_solicitation_uuid128: Option<&'a [u128]>,
+    // public_target_address: Option<&'a [Address]>,
+    // random_target_address: Option<&'a [Address]>,
+    // le_bluetooth_device_address: Option<DeviceAddress>,
 
-    public_target_address: Option<&'a [Address]>,
-    random_target_address: Option<&'a [Address]>,
+    // le_role: Option<LeRole>,
+    // le_supported_features: Option<u8>, // FIXME determine type
+    // channel_map_update_indication: Option<ChannelMapIndication>,
 
-    le_bluetooth_device_address: Option<DeviceAddress>,
-    le_role: Option<LeRole>,
-    le_supported_features: Option<u8>, // FIXME determine type
-    channel_map_update_indication: Option<ChannelMapIndication>,
-
-    BIGInfo: Option<u8>, // FIXME determine type
-    broadcast_code: Option<u8>, // FIXME determine type
+    // BIGInfo: Option<u8>, // FIXME determine type
+    // broadcast_code: Option<u8>, // FIXME determine type
 }
 
 enum Flags {
@@ -57,7 +60,7 @@ enum Flags {
 }
 
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999870
-struct PeripheralConnectionIntervalRange {
+pub struct PeripheralConnectionIntervalRange {
     min: u16,
     max: u16,
 }
@@ -81,7 +84,6 @@ enum LeRole {
 
 /// https://www.novelbits.io/bluetooth-low-energy-advertisements-part-1/#h-pdu-header
 type pdu = u8;
-const PDU_ADV_IND:pdu = 0b0000;
 const PUD_ADV_DIRECT_IND:pdu = 0b0001;
 const PDU_ADV_NONCONN_IND:pdu = 0b0010;
 const PDU_SCAN_REQ:pdu = 0b0011;
@@ -102,3 +104,28 @@ struct ScanResponse {
     data: [u8]      // max 31 bytes
 }
 
+impl<'a> Advertisement<'a> {
+    pub fn adv_ind_pdu(&'a self, packet: &mut [u8]) -> Result<usize, &'static str> {
+        const PDU_ADV_IND:pdu = 0b0000;
+        // TODO handle ChSel, TxAdd, RxAdd
+        packet[0] = PDU_ADV_EXT_IND;
+        match self.payload(packet[2..].as_mut()) {
+            Ok(length) => {
+                packet[1] = length as u8;
+                return Ok(length)
+            }
+            Err(err) => return Err(err)
+        }
+    }
+
+    fn payload(&'a self, packet: &mut [u8]) -> Result<usize, &'static str> {
+        let mut remaining = packet.len();
+
+        // add local name
+        if self.local_name.is_some() {
+
+        }
+
+        todo!()
+    }
+}
