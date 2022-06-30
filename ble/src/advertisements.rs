@@ -16,7 +16,6 @@ pub(crate) struct Advertisement<'a> {
     pub tx_power_level: Option<i8>,
 
     pub advertising_interval: Option<u16>,
-    /// note: only 24 bits are used
     pub advertising_interval_long: Option<u32>,
     pub peripheral_connection_interval_range: Option<PeripheralConnectionIntervalRange>,
 
@@ -124,26 +123,196 @@ impl<'a> Advertisement<'a> {
 
     fn payload(&'a self, packet: &mut [u8]) -> Result<usize, &'static str> {
         let mut remaining = packet.len();
-
         let mut cursor = 0;
+
         // add local name
         match self.local_name {
             Some(name) => {
                 const MAX_NAME_LENGTH:usize = 100;
-                if remaining < (2 + name.len()) {
-                    return Err("local name won't fit in packet");
-                }
-                else if name.len() > MAX_NAME_LENGTH {
+                if name.len() > MAX_NAME_LENGTH {
                     return Err("local name too large");
                 }
+                else if remaining < (2 + name.len()) {
+                    return Err("local name won't fit in packet");
+                }
                 else {
-                    packet[cursor] = gap::DataTypes::COMPLETE_LOCAL_NAME as u8;
+                    packet[cursor] = 1 + name.len() as u8;
                     cursor += 1; remaining -= 1;
-                    packet[cursor] = name.len() as u8;
+                    packet[cursor] = gap::DataTypes::COMPLETE_LOCAL_NAME as u8;
                     cursor += 1; remaining -= 1;
                     packet[cursor..].clone_from_slice(name.as_bytes());
                     cursor += name.len(); remaining -= name.len();
                     
+                }
+            }
+            None => {}
+        }
+
+        // add short local name
+        match self.short_local_name {
+            Some(name) => {
+                const MAX_NAME_LENGTH:usize = 30;
+                if name.len() > MAX_NAME_LENGTH {
+                    return Err("short local name too large");
+                }
+                else if remaining < (2 + name.len()) {
+                    return Err("short local name won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 1 + name.len() as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::SHORTENED_LOCAL_NAME as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor..].clone_from_slice(name.as_bytes());
+                    cursor += name.len(); remaining -= name.len();
+                    
+                }
+            }
+            None => {}
+        }
+
+        // add uri
+        match self.uri {
+            Some(uri) => {
+                if remaining < (2 + uri.len()) {
+                    return Err("uri won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 1 + uri.len() as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::URI as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor..].clone_from_slice(uri.as_bytes());
+                    cursor += uri.len(); remaining -= uri.len();
+                }
+            }
+            None => {}
+        }
+
+        // add flags
+        match self.flags {
+            Some(flags) => {
+                if remaining < 3 {
+                    return Err("flags won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 2;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::FLAGS as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = flags;
+                    cursor += 1; remaining -= 1;
+                }
+            }
+            None => {}
+        }
+
+        // add tx power level
+        match self.tx_power_level {
+            Some(tx_power_level) => {
+                if remaining < 3 {
+                    return Err("tx-power-level won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 3;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::TX_POWER_LEVEL as u8;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = tx_power_level as u8;
+                    cursor += 1; remaining -= 1;
+                }
+            }
+            None => {}
+        }
+
+        // add advertising interval
+        match self.advertising_interval {
+            Some(advertising_interval ) => {
+                if remaining < 4 {
+                    return Err("advertising interval won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 3;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::ADVERTISING_INTERVAL as u8;
+                    cursor += 1; remaining -= 1;
+                    let bytes = advertising_interval.to_le_bytes();
+                    packet[cursor] = bytes[0];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = bytes[1];
+                    cursor += 1; remaining -= 1;
+                }
+            }
+            None => {}
+        }
+
+        // add long advertising interval
+        match self.advertising_interval_long {
+            Some(advertising_interval ) => {
+                if remaining < 6 {
+                    return Err("advertising-long interval won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 5;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::ADVERTISING_INTERVAL_LONG as u8;
+                    cursor += 1; remaining -= 1;
+                    let bytes = advertising_interval.to_le_bytes();
+                    packet[cursor] = bytes[0];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = bytes[1];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = bytes[2];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = bytes[3];
+                    cursor += 1; remaining -= 1;
+                }
+            }
+            None => {}
+        }
+
+        // add peripheral connection interval range
+        match &self.peripheral_connection_interval_range {
+            Some(interval_range ) => {
+                if remaining < 6 {
+                    return Err("advertising-long interval won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 5;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::PERIPHERAL_CONNECTION_INTERVAL_RANGE as u8;
+                    cursor += 1; remaining -= 1;
+                    let min_bytes = interval_range.min.to_le_bytes();
+                    packet[cursor] = min_bytes[0];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = min_bytes[1];
+                    cursor += 1; remaining -= 1;
+                    let max_bytes = interval_range.max.to_le_bytes();
+                    packet[cursor] = max_bytes[0];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = max_bytes[1];
+                    cursor += 1; remaining -= 1;
+                }
+            }
+            None => {}
+        }
+
+        // add appearance
+        match self.appearance {
+            Some(appearance) => {
+                if remaining < 4 {
+                    return Err("advertising interval won't fit in packet");
+                }
+                else {
+                    packet[cursor] = 3;
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = gap::DataTypes::APPEARANCE as u8;
+                    cursor += 1; remaining -= 1;
+                    let bytes = appearance.to_le_bytes();
+                    packet[cursor] = bytes[0];
+                    cursor += 1; remaining -= 1;
+                    packet[cursor] = bytes[1];
+                    cursor += 1; remaining -= 1;
                 }
             }
             None => {}

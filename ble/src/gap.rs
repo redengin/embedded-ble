@@ -20,7 +20,7 @@ impl DataTypes {
     pub const DEVICE_ID:u8 = 0x10;
     pub const SECURITY_MANAGER_TK_VALUE:u8 = 0x10;
     pub const SECURITY_MANAGER_OUT_OF_BAND_FLAGS:u8 = 0x11;
-    pub const SLAVE_CONNECTION_INTERVAL_RANGE:u8 = 0x12;
+    pub const PERIPHERAL_CONNECTION_INTERVAL_RANGE:u8 = 0x12; // currently identified as SLAVE_...
     pub const SOLICITATION_SERVICE_UUID16:u8 = 0x14;
     pub const SOLICITATION_SERVICE_UUID128:u8 = 0x15;
     pub const SERVICE_DATA:u8 = 0x16;
