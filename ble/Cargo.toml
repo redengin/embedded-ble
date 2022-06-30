@@ -13,6 +13,7 @@ version = "0.0.1"
 [dependencies]
 nrf5x-hci = { path="../nrf5x-hci", optional=true }
 bluetooth-hci = { version="0.1.0", features=["version-5-0"] }
+# TODO uninit = { version="0.5.0", default-features=false }
 
 # dependencies for the examples
 [target.'cfg(target_arch="arm")'.dev-dependencies]

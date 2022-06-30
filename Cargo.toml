@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "ble",
-    "nrf5x-hci", #FIXME: disabling as rust testing won't work with pac
+    "nrf5x-hci",
 ]
 
 [profile.dev]

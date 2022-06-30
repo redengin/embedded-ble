@@ -6,6 +6,7 @@ use bluetooth_hci::Controller;
 // mod gatt;
 pub(crate) mod advertisements;
 use advertisements::Advertisement;
+mod gap;
 
 pub struct Ble<'a> {
     local_name: &'a str,
