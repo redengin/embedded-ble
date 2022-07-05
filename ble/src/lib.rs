@@ -9,19 +9,16 @@ use advertisements::Advertisement;
 mod gap;
 
 pub struct Ble<'a> {
+    controller: &'a BleController,
     local_name: &'a str,
-    controller: &'a dyn BleController,
 }
 
 impl<'a> Ble<'a> {
-    pub fn new(controller: &'a dyn BleController, local_name: &'a str) -> Self
+    pub fn new(controller: &'a BleController, local_name: &'a str) -> Self
     {
-        // TODO determine what this is (i.e. is there a mac address?)
-        const access_address:u32 = 0;
-
         Self{
-            local_name,
             controller,
+            local_name,
         }
     }
 

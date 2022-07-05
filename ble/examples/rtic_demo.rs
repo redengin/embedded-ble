@@ -58,7 +58,9 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
-        let controller = Nrf5xController::init(cx.device.RADIO, 0);
+        // TODO determine what this is (i.e. is there a mac address?)
+        const ACCESS_ADDRESS:u32 = 0;
+        let controller = Nrf5xController::init(cx.device.RADIO, ACCESS_ADDRESS);
         let ble = Ble::new(&controller, "hello world");
 
         (Shared {
