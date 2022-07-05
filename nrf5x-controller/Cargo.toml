@@ -1,6 +1,6 @@
 [package]
-name = "nrf5x-hci"
-description = "100% rust BLE stack for nrf52832"
+name = "nrf5x-controller"
+description = "100% rust BLE stack for nrf5x"
 authors = ["redengin <sholstei@yahoo.com>"]
 repository = "https://github.com/redengin/embedded-ble"
 categories = ["embedded", "no-std"]
@@ -11,6 +11,7 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
+controller = { path="../controller" }
 nrf51-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52805-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52810-pac = { version="0.11", optional=true, features=["rt"] }
@@ -27,8 +28,8 @@ nrf52811 = ["dep:nrf52811-pac"]
 nrf52832 = ["dep:nrf52832-pac"]
 nrf52833 = ["dep:nrf52833-pac"]
 nrf52840 = ["dep:nrf52840-pac"]
-xxAA-package = []
-xxAB-package = []
+xxAA-package = []   # extra info for nrf pac
+xxAB-package = []   # extra info for nrf pac
 default = ["xxAB-package"]
 
 

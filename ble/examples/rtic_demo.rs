@@ -23,14 +23,22 @@ use nrf52840_hal::{pac};
 
 #[app(device=crate::pac, dispatchers=[SWI0_EGU0, SWI1_EGU1])]
 mod app {
-    use rtt_target::{rtt_init_print, rprintln};
-    // choose the hardware hal
-    #[cfg(feature = "nrf52832")]
-    use nrf52832_hal::{self as hal};
-    use bluetooth_hci::Controller;
-    use fugit::ExtU32;
-
     use embedded_ble::Ble;
+    // choose controller
+    #[cfg(any(
+        feature="nrf51",
+        feature="nrf52805",
+        feature="nrf52810",
+        feature="nrf52811",
+        feature="nrf52832",
+        feature="nrf52833",
+        feature="nrf52840",
+    ))]
+    use nrf5x_controller::Nrf5xController;
+
+    use fugit::ExtU32;
+    use rtt_target::{rtt_init_print, rprintln};
+
 
     use crate::MonoRtc;
     #[monotonic(binds=RTC0, default=true)]
@@ -50,9 +58,8 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
-        // let hci = nrf5x_hci::Hci.new();
-        // let ble = Ble::new(hci);
-        let ble = Ble::new("hello world");
+        let controller = Nrf5xController::init(cx.device.RADIO, 0);
+        let ble = Ble::new(&controller, "hello world");
 
         (Shared {
             ble,

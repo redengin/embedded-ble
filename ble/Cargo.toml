@@ -11,8 +11,8 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
-nrf5x-hci = { path="../nrf5x-hci", optional=true }
-bluetooth-hci = { version="0.1.0", features=["version-5-0"] }
+controller = { path="../controller" }
+nrf5x-controller = { path="../nrf5x-controller", optional=true }
 # TODO uninit = { version="0.5.0", default-features=false }
 
 # dependencies for the examples
@@ -27,10 +27,10 @@ nrf52832-hal = { version="0.15.1", features=["rt"], default-features=false }
 fugit = "0.3.5"
 
 [features]
-nrf51 = ["dep:nrf5x-hci"]
-nrf52805 = ["dep:nrf5x-hci"]
-nrf52810 = ["dep:nrf5x-hci"]
-nrf52811 = ["dep:nrf5x-hci"]
-nrf52832 = ["dep:nrf5x-hci"]
-nrf52833 = ["dep:nrf5x-hci"]
-nrf52840 = ["dep:nrf5x-hci"]
+nrf51 = ["dep:nrf5x-controller"]
+nrf52805 = ["dep:nrf5x-controller"]
+nrf52810 = ["dep:nrf5x-controller"]
+nrf52811 = ["dep:nrf5x-controller"]
+nrf52832 = ["dep:nrf5x-controller"]
+nrf52833 = ["dep:nrf5x-controller"]
+nrf52840 = ["dep:nrf5x-controller"]

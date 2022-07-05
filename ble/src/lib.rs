@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
-use bluetooth_hci::Controller;
+use controller::BleController;
 
 // pub mod gatt_server;
 // mod gatt;
@@ -10,13 +10,18 @@ mod gap;
 
 pub struct Ble<'a> {
     local_name: &'a str,
+    controller: &'a dyn BleController,
 }
 
 impl<'a> Ble<'a> {
-    pub fn new(local_name: &'a str) -> Self
+    pub fn new(controller: &'a dyn BleController, local_name: &'a str) -> Self
     {
+        // TODO determine what this is (i.e. is there a mac address?)
+        const access_address:u32 = 0;
+
         Self{
             local_name,
+            controller,
         }
     }
 

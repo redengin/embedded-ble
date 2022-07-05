@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "ble",
-    "nrf5x-hci",
+    "controller",
+    "nrf5x-controller",
 ]
 
 [profile.dev]

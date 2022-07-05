@@ -1,5 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 
+use controller::BleController;
+
 // choose the hardware pac
 #[cfg(feature = "nrf51")]
 use nrf51_pac as pac;
@@ -16,22 +18,18 @@ use nrf52833_pac as pac;
 #[cfg(feature = "nrf52840")]
 use nrf52840_pac as pac;
 
-pub struct Hci {
+pub struct Nrf5xController {
     radio: pac::RADIO,
-    // tx_buf: &'static mut PacketBuffer,
-    // rx_buf: &'static mut PacketBuffer,
 }
 
-use crate::pac::radio::state::STATE_R;
+impl Nrf5xController {
 
-impl Hci {
     #[cfg(feature = "nrf51")]
-    pub(crate) fn init(
+    pub fn init(
         radio: pac::RADIO,
         access_address: u32,
         ficr: pac::FICR,
     ) -> Self {
-
         // for nRF51 manually trim values.
         if ficr.overrideen.read().ble_1mbit().is_override() {
             unsafe {
@@ -55,21 +53,21 @@ impl Hci {
                 });
             }
         }
-        Self::initialize(radio, access_address)
+        Self::_initialize(radio, access_address)
     }
 
-    pub(crate) fn init(
+    pub fn init(
         radio: pac::RADIO,
         access_address: u32,
     ) -> Self {
         // make sure this only initializes once
-        Self::initialize(radio, access_address)
+        Self::_initialize(radio, access_address)
     }
 
-    fn initialize(
+    fn _initialize(
         radio: pac::RADIO,
         access_address: u32,
-    ) -> Hci {
+    ) -> Self {
         // TODO: figure out what this actually does/can do
         radio.mode.write(|w| w.mode().ble_1mbit());
         radio.txpower.write(|w| w.txpower().pos4d_bm());
@@ -116,14 +114,10 @@ impl Hci {
 
         // TODO: enable TIFS to track time interval between packets
 
-        Hci{ radio }
+        Self{ radio }
     }
 
-    pub fn state(&self) -> STATE_R {
-        self.radio.state.read().state()
-    }
-
-    pub fn transmit(&mut self, buffer:&[u8]) {
+    pub fn send(&mut self, buffer:&[u8]) {
         let buffer_ptr = buffer.as_ptr();
         unsafe {
             // "The CPU should reconfigure this pointer every time before the RADIO is started via
@@ -151,4 +145,7 @@ impl Hci {
         }
     }
 
+}
+
+impl BleController for Nrf5xController {
 }
