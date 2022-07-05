@@ -9,12 +9,12 @@ use advertisements::Advertisement;
 mod gap;
 
 pub struct Ble<'a> {
-    controller: &'a BleController,
+    controller: &'a dyn BleController,
     local_name: &'a str,
 }
 
 impl<'a> Ble<'a> {
-    pub fn new(controller: &'a BleController, local_name: &'a str) -> Self
+    pub fn new(controller: &'a dyn BleController, local_name: &'a str) -> Self
     {
         Self{
             controller,
@@ -32,7 +32,8 @@ impl<'a> Ble<'a> {
             ..Advertisement::default()
         };
         let mut buffer:[u8;255] = [0;255];
-        let pdu = ad.adv_ind_pdu(&mut buffer);
+        let len = ad.adv_ind_pdu(&mut buffer).unwrap();
+        self.controller.send(&buffer[0..len]).unwrap();
     }
 
     /// returns `true` if there are GATT events, else false

@@ -117,7 +117,7 @@ impl Nrf5xController {
         Self{ radio }
     }
 
-    pub fn send(&mut self, buffer:&[u8]) {
+    pub fn send(&self, buffer:&[u8]) -> Result<usize, &'static str> {
         let buffer_ptr = buffer.as_ptr();
         unsafe {
             // "The CPU should reconfigure this pointer every time before the RADIO is started via
@@ -143,9 +143,11 @@ impl Nrf5xController {
 
             // Now our `tx_buf` can be used again.
         }
+        Ok(buffer.len())
     }
 
 }
 
 impl BleController for Nrf5xController {
+    fn send(&self, data: &[u8]) -> Result<usize, &'static str> { self.send(data) }
 }
