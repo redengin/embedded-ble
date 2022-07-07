@@ -25,6 +25,7 @@ use nrf52840_hal::{pac};
 mod app {
     use embedded_ble::Ble;
     // choose controller
+    use controller::BleController;
     #[cfg(any(
         feature="nrf51",
         feature="nrf52805",

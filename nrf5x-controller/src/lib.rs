@@ -21,6 +21,7 @@ use nrf52840_pac as pac;
 pub struct Nrf5xController {
     radio: pac::RADIO,
 }
+unsafe impl Sync for Nrf5xController {}
 
 impl Nrf5xController {
 
