@@ -25,7 +25,7 @@ use nrf52840_hal::{pac};
 mod app {
     use embedded_ble::Ble;
     // choose controller
-    use controller::BleController;
+    // use controller::BleController;
     #[cfg(any(
         feature="nrf51",
         feature="nrf52805",
@@ -35,7 +35,7 @@ mod app {
         feature="nrf52833",
         feature="nrf52840",
     ))]
-    use nrf5x_controller::Nrf5xController;
+    use embedded_ble_nrf5x::Nrf5xBle;
 
     use fugit::ExtU32;
     use rtt_target::{rtt_init_print, rprintln};
@@ -61,8 +61,11 @@ mod app {
 
         // TODO determine what this is (i.e. is there a mac address?)
         const ACCESS_ADDRESS:u32 = 0;
-        let controller = Nrf5xController::init(cx.device.RADIO, ACCESS_ADDRESS);
-        let ble = Ble::new(&controller, "hello world");
+        let ble_controller = {
+
+        };
+        let hw_ble = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
+        let ble = Ble::new(hw_ble, "hello world");
 
         (Shared {
             ble,

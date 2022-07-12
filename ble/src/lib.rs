@@ -1,23 +1,33 @@
 #![cfg_attr(not(test), no_std)]
 
-use controller::BleController;
-
 // pub mod gatt_server;
 // mod gatt;
 pub(crate) mod advertisements;
 use advertisements::Advertisement;
 mod gap;
 
+// choose a hardware driver for BLE
+#[cfg(any(
+    feature="nrf51",
+    feature="nrf52805",
+    feature="nrf52810",
+    feature="nrf52811",
+    feature="nrf52832",
+    feature="nrf52833",
+    feature="nrf52840",
+))]
+use embedded_ble_nrf5x::Nrf5xBle as HwBle;
+
 pub struct Ble<'a> {
-    controller: &'a dyn BleController,
+    hw_ble: HwBle,
     local_name: &'a str,
 }
 
 impl<'a> Ble<'a> {
-    pub fn new(controller: &'a dyn BleController, local_name: &'a str) -> Self
+    pub fn new(hw_ble: HwBle, local_name: &'a str) -> Self
     {
         Self{
-            controller,
+            hw_ble,
             local_name,
         }
     }
@@ -33,7 +43,7 @@ impl<'a> Ble<'a> {
         };
         let mut buffer:[u8;255] = [0;255];
         let len = ad.adv_ind_pdu(&mut buffer).unwrap();
-        self.controller.send(&buffer[0..len]).unwrap();
+        self.hw_ble.send(&buffer[0..len]).unwrap();
     }
 
     /// returns `true` if there are GATT events, else false

@@ -1,7 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 
-use controller::BleController;
-
 // choose the hardware pac
 #[cfg(feature = "nrf51")]
 use nrf51_pac as pac;
@@ -18,14 +16,13 @@ use nrf52833_pac as pac;
 #[cfg(feature = "nrf52840")]
 use nrf52840_pac as pac;
 
-pub struct Nrf5xController {
-    radio: pac::RADIO,
+pub struct Nrf5xBle {
+    pub radio: pac::RADIO,
 }
-unsafe impl Sync for Nrf5xController {}
 
-impl Nrf5xController {
+impl Nrf5xBle {
 
-    #[cfg(feature = "nrf51")]
+#[cfg(feature = "nrf51")]
     pub fn init(
         radio: pac::RADIO,
         access_address: u32,
@@ -57,6 +54,14 @@ impl Nrf5xController {
         Self::_initialize(radio, access_address)
     }
 
+#[cfg(any(
+    feature="nrf52805",
+    feature="nrf52810",
+    feature="nrf52811",
+    feature="nrf52832",
+    feature="nrf52833",
+    feature="nrf52840",
+))]
     pub fn init(
         radio: pac::RADIO,
         access_address: u32,
@@ -149,6 +154,6 @@ impl Nrf5xController {
 
 }
 
-impl BleController for Nrf5xController {
-    fn send(&self, data: &[u8]) -> Result<usize, &'static str> { self.send(data) }
-}
+// impl BleController for Nrf5xController {
+//     fn send(&self, data: &[u8]) -> Result<usize, &'static str> { self.send(data) }
+// }
