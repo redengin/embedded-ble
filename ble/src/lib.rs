@@ -33,7 +33,8 @@ impl<'a> Ble<'a> {
     }
 
     pub fn is_connected(self:&Self) -> bool {
-        todo!()
+        false
+        // todo!()
     }
 
     pub fn advertise(self:&Self) {

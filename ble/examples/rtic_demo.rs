@@ -66,6 +66,7 @@ mod app {
         };
         let hw_ble = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
         let ble = Ble::new(hw_ble, "hello world");
+        ble_advertiser::spawn().unwrap();
 
         (Shared {
             ble,
@@ -94,6 +95,7 @@ mod app {
                 ble.advertise();
             }
         });
+        rprintln!("advertising done");
         ble_advertiser::spawn_after(1.secs()).unwrap();
     }
 

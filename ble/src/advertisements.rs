@@ -140,7 +140,7 @@ impl<'a> Advertisement<'a> {
                     cursor += 1; remaining -= 1;
                     packet[cursor] = gap::DataTypes::COMPLETE_LOCAL_NAME as u8;
                     cursor += 1; remaining -= 1;
-                    packet[cursor..].clone_from_slice(name.as_bytes());
+                    packet[cursor..(cursor + name.len())].clone_from_slice(name.as_bytes());
                     cursor += name.len(); remaining -= name.len();
                     
                 }
@@ -318,6 +318,6 @@ impl<'a> Advertisement<'a> {
             None => {}
         }
 
-        todo!()
+        Ok(cursor)
     }
 }
