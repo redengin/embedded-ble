@@ -1,3 +1,36 @@
+ARCHIVED
+================================================================================
+I began this project as a way to learn Rust and refactor
+(rubble)[https://github.com/jonas-schievink/rubble] to provide a fully Rust
+Bluetooth stack that could abstract the bluetooth hardware.
+
+What I've found is that the datasheets/user documentation of BlueTooth hardware
+does not describe the actual behavior of the hardware - instead manufacturers
+provide binary libraries focused on integration with partner operating systems.
+
+Under this paradigm, creating a fully Rust based Bluetooth stack is impractical
+as it would require large amounts of effort to reverse engineer the hardware to
+determine the proper software implementation.
+
+Using Bluetooth with embedded Rust
+--------------------------------------------------------------------------------
+One path is to leverage another embedded OS build system to incorporate your
+Rust code.
+
+Alternatively, you can integrate their binary library under an RTIC OS by
+providing Rust access to the library's functions.
+
+Final words
+--------------------------------------------------------------------------------
+The tight coupling of hardware and software providers is an unnecessary
+constraint on progress. I'll leave the lawyers to determine if these constraints
+violate anti-trust provisions.
+
+What should be:
+* hardware manufacturers publicly document their hardware
+    * rather than only provide documentation to software partners
+
+
 Bluetooth® Low Energy stack for embedded Rust
 ================================================================================
 Implemented per the [BlueTooth](https://www.bluetooth.com/specifications/specs/)
