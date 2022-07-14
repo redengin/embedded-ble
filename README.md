@@ -1,7 +1,7 @@
 ARCHIVED
 ================================================================================
 I began this project as a way to learn Rust and refactor
-(rubble)[https://github.com/jonas-schievink/rubble] to provide a fully Rust
+[rubble](https://github.com/jonas-schievink/rubble) to provide a fully Rust
 Bluetooth stack that could abstract the bluetooth hardware.
 
 What I've found is that the datasheets/user documentation of BlueTooth hardware
