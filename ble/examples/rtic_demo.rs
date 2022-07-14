@@ -43,8 +43,8 @@ mod app {
 
     // provide monotonic scheduling
     use crate::MonotonicTimer;
-    #[monotonic(binds=TIMER1, default=true)]
-    type Tonic = MonotonicTimer<crate::pac::TIMER1>;
+    #[monotonic(binds=TIMER0, default=true)]
+    type Tonic = MonotonicTimer<crate::pac::TIMER0>;
 
     #[shared]
     struct Shared {
@@ -74,7 +74,7 @@ mod app {
          },
          Local {
          },
-         init::Monotonics(MonotonicTimer::new(cx.device.TIMER1)))
+         init::Monotonics(MonotonicTimer::new(cx.device.TIMER0)))
     }
 
     #[idle]
@@ -126,8 +126,7 @@ mod app {
 // Taken from: https://github.com/kalkyl/nrf-play/blob/47f4410d4e39374c18ff58dc17c25159085fb526/src/mono.rs
 // RTIC Monotonic impl for the 32-bit timers
 pub use fugit::{self, ExtU32};
-// use nrf52832_hal::pac::{timer0, TIMER0, TIMER1, TIMER2};
-use nrf52832_hal::pac::{timer0, TIMER1};
+use nrf52832_hal::pac::{timer0, TIMER0, TIMER1, TIMER2};
 use rtic::rtic_monotonic::Monotonic;
 
 pub struct MonotonicTimer<T: Instance32>(T);
@@ -173,6 +172,6 @@ impl<T: Instance32> Monotonic for MonotonicTimer<T> {
 }
 
 pub trait Instance32: core::ops::Deref<Target = timer0::RegisterBlock> {}
-// impl Instance32 for TIMER0 {}    unusable as pac uses it internally
+impl Instance32 for TIMER0 {}
 impl Instance32 for TIMER1 {}
-// impl Instance32 for TIMER2 {}
+impl Instance32 for TIMER2 {}
