@@ -27,7 +27,9 @@ embedded-ble-nrf5x = { version="0.0.1", features=["nrf52832"] }
     * nrf52833
     * nrf52840
 
-For usage example see [rtic_demo.rs](ble/examples/rtic_demo.rs).
+API Documentation
+--------------------------------------------------------------------------------
+TODO <!-- TODO generate rust docs -->
 
 Demo
 ================================================================================
@@ -47,6 +49,19 @@ Unit Testing
 cargo test --lib --features nrf52832
 ```
 
+Contributing
+================================================================================
+The Bluetooth specifications don't draw a hardline between protocol and hardware
+support - the closest is [HCI](https://software-dl.ti.com/lprf/simplelink_cc2640r2_latest/docs/blestack/ble_user_guide/html/ble-stack-3.x/hci.html).
+Using the HCI protocol for devices that can provide direct BLE hardware access
+wastes large amount of compute.
+
+Unfortunately, hardware manufactures poorly describe how to access BLE hardware
+directly, so it is necessary to find an open-source implementation to reverse
+engineer into Rust.
+
+The [Apache Mynewt-nimble](https://github.com/apache/mynewt-nimble) project
+provides open-source implementation for [hardware](https://github.com/apache/mynewt-core#overview) - leveraging their host-controller architecture.
 
 
 
