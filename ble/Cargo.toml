@@ -26,10 +26,10 @@ nrf52832-hal = { version="0.15.1", features=["rt"], default-features=false }
 fugit = "0.3.5"
 
 [features]
-nrf51 = ["dep:embedded-ble-nrf5x"]
-nrf52805 = ["dep:embedded-ble-nrf5x"]
-nrf52810 = ["dep:embedded-ble-nrf5x"]
-nrf52811 = ["dep:embedded-ble-nrf5x"]
-nrf52832 = ["dep:embedded-ble-nrf5x"]
-nrf52833 = ["dep:embedded-ble-nrf5x"]
-nrf52840 = ["dep:embedded-ble-nrf5x"]
+nrf51 = ["embedded-ble-nrf5x"]
+nrf52805 = ["embedded-ble-nrf5x"]
+nrf52810 = ["embedded-ble-nrf5x"]
+nrf52811 = ["embedded-ble-nrf5x"]
+nrf52832 = ["embedded-ble-nrf5x"]
+nrf52833 = ["embedded-ble-nrf5x"]
+nrf52840 = ["embedded-ble-nrf5x"]

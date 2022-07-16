@@ -25,17 +25,20 @@ use nrf52840_hal::{pac, Clocks, clocks};
 mod app {
     use rtt_target::{rtt_init_print, rprintln};
 
-    // provide monotonic scheduling
+    // provide monotonic scheduling for NRF5x hardware
+#[cfg(feature="embedded-ble-nrf5x")]
     use fugit::ExtU64;
+#[cfg(feature="embedded-ble-nrf5x")]
     use crate::nrf_monotonic::MonotonicRtc;
+#[cfg(feature="embedded-ble-nrf5x")]
     #[monotonic(binds=RTC0, default=true)]
+#[cfg(feature="embedded-ble-nrf5x")]
     type Tonic = MonotonicRtc<crate::pac::RTC0>;
 
 
     use embedded_ble::Ble;
     // choose controller
-    // use controller::BleController;
-    // TODO use #[cfg(...="nrf5x")]
+#[cfg(feature="embedded-ble-nrf5x")]
     use embedded_ble_nrf5x::Nrf5xBle;
 
     #[shared]
@@ -52,11 +55,8 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
-        // configure RTC source clock (LFCLK) for nrf hardware
-        // TODO use #[cfg(...="nrf5x")]
-        if cfg!(feature="nrf51") || cfg!(feature="nrf52805") || cfg!(feature="nrf52810") || cfg!(feature="nrf52811")
-           || cfg!(feature="nrf52832") || cfg!(feature="nrf52833") || cfg!(feature="nrf52840")
-        {
+        // configure RTC source clock (LFCLK) for NRF5x hardware
+        if cfg!(feature="embedded-ble-nrf5x") {
             let _clocks = crate::Clocks::new(cx.device.CLOCK)
                 .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
                 .start_lfclk();
@@ -64,12 +64,10 @@ mod app {
 
         // TODO determine what this is (i.e. is there a mac address?)
         const ACCESS_ADDRESS:u32 = 0;
-        let ble_controller = {
+#[cfg(feature="embedded-ble-nrf5x")]
+        let ble_controller = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
 
-        };
-        // TODO use #[cfg(...="nrf5x")]
-        let hw_ble = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
-        let ble = Ble::new(hw_ble, "hello world");
+        let ble = Ble::new(ble_controller, "hello world");
         ble_advertiser::spawn().unwrap();
 
         (Shared {
@@ -126,7 +124,7 @@ mod app {
 }
 
 
-// TODO use #[cfg(...="nrf5x")]
+#[cfg(feature="embedded-ble-nrf5x")]
 mod nrf_monotonic {
     //------------------------------------------------------------------------------
     // RTIC Monotonic impl for the RTCs (https://github.com/eflukx/rtic-rtc-example)
