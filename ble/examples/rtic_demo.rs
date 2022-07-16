@@ -7,44 +7,36 @@ use rtic::app;
 
 // choose the hardware pac
 #[cfg(feature = "nrf51")]
-use nrf51_hal::{pac};
+use nrf51_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52805")]
-use nrf52805_hal::{pac};
+use nrf52805_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52810")]
-use nrf52810_hal::{pac};
+use nrf52810_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52811")]
-use nrf52811_hal::{pac};
+use nrf52811_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52832")]
-use nrf52832_hal::{pac};
+use nrf52832_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52833")]
-use nrf52833_hal::{pac};
+use nrf52833_hal::{pac, Clocks, clocks};
 #[cfg(feature = "nrf52840")]
-use nrf52840_hal::{pac};
+use nrf52840_hal::{pac, Clocks, clocks};
 
 #[app(device=crate::pac, dispatchers=[SWI0_EGU0, SWI1_EGU1])]
 mod app {
+    use rtt_target::{rtt_init_print, rprintln};
+
+    // provide monotonic scheduling
+    use fugit::ExtU64;
+    use crate::nrf_monotonic::MonotonicRtc;
+    #[monotonic(binds=RTC0, default=true)]
+    type Tonic = MonotonicRtc<crate::pac::RTC0>;
+
+
     use embedded_ble::Ble;
     // choose controller
     // use controller::BleController;
-    #[cfg(any(
-        feature="nrf51",
-        feature="nrf52805",
-        feature="nrf52810",
-        feature="nrf52811",
-        feature="nrf52832",
-        feature="nrf52833",
-        feature="nrf52840",
-    ))]
+    // TODO use #[cfg(...="nrf5x")]
     use embedded_ble_nrf5x::Nrf5xBle;
-
-    use fugit::ExtU32;
-    use rtt_target::{rtt_init_print, rprintln};
-
-
-    // provide monotonic scheduling
-    use crate::MonotonicTimer;
-    #[monotonic(binds=TIMER0, default=true)]
-    type Tonic = MonotonicTimer<crate::pac::TIMER0>;
 
     #[shared]
     struct Shared {
@@ -60,11 +52,22 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
+        // configure RTC source clock (LFCLK) for nrf hardware
+        // TODO use #[cfg(...="nrf5x")]
+        if cfg!(feature="nrf51") || cfg!(feature="nrf52805") || cfg!(feature="nrf52810") || cfg!(feature="nrf52811")
+           || cfg!(feature="nrf52832") || cfg!(feature="nrf52833") || cfg!(feature="nrf52840")
+        {
+            let _clocks = crate::Clocks::new(cx.device.CLOCK)
+                .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
+                .start_lfclk();
+        }
+
         // TODO determine what this is (i.e. is there a mac address?)
         const ACCESS_ADDRESS:u32 = 0;
         let ble_controller = {
 
         };
+        // TODO use #[cfg(...="nrf5x")]
         let hw_ble = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
         let ble = Ble::new(hw_ble, "hello world");
         ble_advertiser::spawn().unwrap();
@@ -74,7 +77,7 @@ mod app {
          },
          Local {
          },
-         init::Monotonics(MonotonicTimer::new(cx.device.TIMER0)))
+         init::Monotonics(MonotonicRtc::new(cx.device.RTC0)))
     }
 
     #[idle]
@@ -123,55 +126,82 @@ mod app {
 }
 
 
-// Taken from: https://github.com/kalkyl/nrf-play/blob/47f4410d4e39374c18ff58dc17c25159085fb526/src/mono.rs
-// RTIC Monotonic impl for the 32-bit timers
-pub use fugit::{self, ExtU32};
-use nrf52832_hal::pac::{timer0, TIMER0, TIMER1, TIMER2};
-use rtic::rtic_monotonic::Monotonic;
+// TODO use #[cfg(...="nrf5x")]
+mod nrf_monotonic {
+    //------------------------------------------------------------------------------
+    // RTIC Monotonic impl for the RTCs (https://github.com/eflukx/rtic-rtc-example)
+    use crate::pac::{rtc0, RTC0, RTC1, RTC2};
 
-pub struct MonotonicTimer<T: Instance32>(T);
-
-impl<T: Instance32> MonotonicTimer<T> {
-    pub fn new(timer: T) -> Self {
-        timer.prescaler.write(
-            |w| unsafe { w.prescaler().bits(4) }, // 1 MHz
-        );
-        timer.bitmode.write(|w| w.bitmode()._32bit());
-        MonotonicTimer(timer)
+    use rtic::rtic_monotonic::Monotonic;
+    pub struct  MonotonicRtc<T: InstanceRtc> {
+        overflow: u64,
+        rtc: T,
     }
+
+    impl<T: InstanceRtc> MonotonicRtc<T> {
+        pub fn new(rtc: T) -> Self {
+            unsafe { rtc.prescaler.write(|w| w.bits(0)) };
+
+            Self { overflow: 0, rtc }
+        }
+
+        pub fn is_overflow(&self) -> bool {
+            self.rtc.events_ovrflw.read().bits() == 1
+        }
+    }
+
+    impl<T: InstanceRtc> Monotonic for MonotonicRtc<T> {
+        type Instant = fugit::TimerInstantU64<32_768>;
+        type Duration = fugit::TimerDurationU64<32_768>;
+
+        unsafe fn reset(&mut self) {
+            self.rtc.intenset.write(|w| w.compare0().set().ovrflw().set());
+            self.rtc.evtenset.write(|w| w.compare0().set().ovrflw().set());
+
+            self.rtc.tasks_clear.write(|w| w.bits(1));
+            self.rtc.tasks_start.write(|w| w.bits(1));
+        }
+
+        #[inline(always)]
+        fn now(&mut self) -> Self::Instant {
+            let cnt = self.rtc.counter.read().bits();
+            let ovf = if self.is_overflow() { self.overflow.wrapping_add(1) } else { self.overflow };
+
+            Self::Instant::from_ticks((ovf << 24) | cnt as u64)
+        }
+
+        fn set_compare(&mut self, instant: Self::Instant) {
+            let now = self.now();
+
+            // Since the timer may or may not overflow based on the requested compare val, we check
+            // how many ticks are left.
+            let val = match instant.checked_duration_since(now) {
+                Some(x) if x.ticks() <= 0xffffff => instant.duration_since_epoch().ticks() & 0xffffff, // Will not overflow
+                _ => 0, // Will overflow or in the past, set the same value as after overflow to not get extra interrupts
+            };
+
+            unsafe { self.rtc.cc[0].write(|w| w.bits(val as u32)) };
+        }
+
+        fn clear_compare_flag(&mut self) {
+            unsafe { self.rtc.events_compare[0].write(|w| w.bits(0)) };
+        }
+
+        #[inline(always)]
+        fn zero() -> Self::Instant {
+            Self::Instant::from_ticks(0)
+        }
+
+        fn on_interrupt(&mut self) {
+            if self.is_overflow() {
+                self.overflow = self.overflow.wrapping_add(1);
+                self.rtc.events_ovrflw.write(|w| unsafe { w.bits(0) });
+            }
+        }
+    }
+
+    pub trait InstanceRtc: core::ops::Deref<Target = rtc0::RegisterBlock> {}
+    impl InstanceRtc for RTC0 {}
+    impl InstanceRtc for RTC1 {}
+    impl InstanceRtc for RTC2 {}
 }
-
-impl<T: Instance32> Monotonic for MonotonicTimer<T> {
-    type Instant = fugit::TimerInstantU32<1_000_000>;
-    type Duration = fugit::TimerDurationU32<1_000_000>;
-
-    unsafe fn reset(&mut self) {
-        self.0.intenset.modify(|_, w| w.compare0().set());
-        self.0.tasks_clear.write(|w| w.bits(1));
-        self.0.tasks_start.write(|w| w.bits(1));
-    }
-
-    #[inline(always)]
-    fn now(&mut self) -> Self::Instant {
-        self.0.tasks_capture[1].write(|w| unsafe { w.bits(1) });
-        Self::Instant::from_ticks(self.0.cc[1].read().bits())
-    }
-
-    fn set_compare(&mut self, instant: Self::Instant) {
-        self.0.cc[0].write(|w| unsafe { w.cc().bits(instant.duration_since_epoch().ticks()) });
-    }
-
-    fn clear_compare_flag(&mut self) {
-        self.0.events_compare[0].write(|w| w);
-    }
-
-    #[inline(always)]
-    fn zero() -> Self::Instant {
-        Self::Instant::from_ticks(0)
-    }
-}
-
-pub trait Instance32: core::ops::Deref<Target = timer0::RegisterBlock> {}
-impl Instance32 for TIMER0 {}
-impl Instance32 for TIMER1 {}
-impl Instance32 for TIMER2 {}
