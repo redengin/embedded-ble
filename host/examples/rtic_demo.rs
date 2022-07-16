@@ -64,6 +64,7 @@ mod app {
 
         // TODO determine what this is (i.e. is there a mac address?)
         const ACCESS_ADDRESS:u32 = 0;
+        // FIXME doesn't support nrf51 (which requires FICR)
 #[cfg(feature="embedded-ble-nrf5x")]
         let ble_controller = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
 

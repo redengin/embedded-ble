@@ -11,7 +11,7 @@ edition = "2018"
 version = "0.0.1"
 
 [dependencies]
-embedded-ble-nrf5x = { version="0.0.1", path="../nrf5x", optional=true }
+embedded-ble-nrf5x = { version="0.0.1", path="../controller-nrf5x", optional=true }
 # TODO uninit = { version="0.5.0", default-features=false }
 
 # dependencies for the examples
