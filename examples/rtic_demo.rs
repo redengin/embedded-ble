@@ -26,24 +26,19 @@ mod app {
     use rtt_target::{rtt_init_print, rprintln};
 
     // provide monotonic scheduling for NRF5x hardware
-#[cfg(feature="embedded-ble-nrf5x")]
     use fugit::ExtU64;
-#[cfg(feature="embedded-ble-nrf5x")]
     use crate::nrf_monotonic::MonotonicRtc;
-#[cfg(feature="embedded-ble-nrf5x")]
     #[monotonic(binds=RTC0, default=true)]
-#[cfg(feature="embedded-ble-nrf5x")]
     type Tonic = MonotonicRtc<crate::pac::RTC0>;
 
-
-    use embedded_ble::Ble;
+    // use embedded_ble::Ble;
     // choose controller
-#[cfg(feature="embedded-ble-nrf5x")]
-    use embedded_ble_nrf5x::Nrf5xBle;
+// #[cfg(feature="embedded-ble-nrf5x")]
+    // use embedded_ble_nrf5x::Nrf5xBle;
 
     #[shared]
     struct Shared {
-        ble: Ble<'static>,
+        // ble: Ble<'static>,
     }
 
     #[local]
@@ -62,17 +57,17 @@ mod app {
                 .start_lfclk();
         }
 
-        // TODO determine what this is (i.e. is there a mac address?)
-        const ACCESS_ADDRESS:u32 = 0;
-        // FIXME doesn't support nrf51 (which requires FICR)
-#[cfg(feature="embedded-ble-nrf5x")]
-        let ble_controller = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
+//         // TODO determine what this is (i.e. is there a mac address?)
+//         const ACCESS_ADDRESS:u32 = 0;
+//         // FIXME doesn't support nrf51 (which requires FICR)
+// #[cfg(feature="embedded-ble-nrf5x")]
+//         let ble_controller = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
 
-        let ble = Ble::new(ble_controller, "hello world");
-        ble_advertiser::spawn().unwrap();
+//         let ble = Ble::new(ble_controller, "hello world");
+//         ble_advertiser::spawn().unwrap();
 
         (Shared {
-            ble,
+            // ble,
          },
          Local {
          },
@@ -88,44 +83,44 @@ mod app {
         }
     }
 
-    /// schedule for **lowest** priority (1)
-    #[task(shared=[ble], priority=1)]
-    fn ble_advertiser(mut cx:ble_advertiser::Context) {
-        cx.shared.ble.lock(|ble| {
-            // only advertise if we're not connected
-            if ! ble.is_connected() {
-                rprintln!("advertising...");
-                ble.advertise();
-            }
-        });
-        rprintln!("advertising done");
-        ble_advertiser::spawn_after(1.secs()).unwrap();
-    }
+    // schedule for **lowest** priority (1)
+    // #[task(shared=[ble], priority=1)]
+    // fn ble_advertiser(mut cx:ble_advertiser::Context) {
+    //     cx.shared.ble.lock(|ble| {
+    //         // only advertise if we're not connected
+    //         if ! ble.is_connected() {
+    //             rprintln!("advertising...");
+    //             ble.advertise();
+    //         }
+    //     });
+    //     rprintln!("advertising done");
+    //     ble_advertiser::spawn_after(1.secs()).unwrap();
+    // }
 
-    /// schedule for **highest** priority
-    #[task(binds=RADIO, shared=[ble], priority=8)]
-    fn ble_handler(mut cx:ble_handler::Context) {
-        rprintln!("handling radio event...");
-        cx.shared.ble.lock(|ble| {
-            let has_work = ble.radio_event();
-            if has_work {
-                ble_worker::spawn().ok();
-            }
-        });
-    }
+    // schedule for **highest** priority
+    // #[task(binds=RADIO, shared=[ble], priority=8)]
+    // fn ble_handler(mut cx:ble_handler::Context) {
+    //     rprintln!("handling radio event...");
+    //     cx.shared.ble.lock(|ble| {
+    //         let has_work = ble.radio_event();
+    //         if has_work {
+    //             ble_worker::spawn().ok();
+    //         }
+    //     });
+    // }
 
-    /// schedule for high priority (apps responsive to state changes)
-    #[task(shared=[ble], priority=7)]
-    fn ble_worker(mut cx:ble_worker::Context) {
-        cx.shared.ble.lock(|ble| {
-            rprintln!("working...");
-            ble.work();
-        });
-    }
+    // schedule for high priority (apps responsive to state changes)
+    // #[task(shared=[ble], priority=7)]
+    // fn ble_worker(mut cx:ble_worker::Context) {
+    //     cx.shared.ble.lock(|ble| {
+    //         rprintln!("working...");
+    //         ble.work();
+    //     });
+    // }
 }
 
 
-#[cfg(feature="embedded-ble-nrf5x")]
+#[cfg(feature="nrf5x")]
 mod nrf_monotonic {
     //------------------------------------------------------------------------------
     // RTIC Monotonic impl for the RTCs (https://github.com/eflukx/rtic-rtc-example)
