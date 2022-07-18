@@ -2,9 +2,7 @@
 #![no_std]
 
 use panic_rtt_target as _;
-
 use rtic::app;
-
 // choose the hardware pac
 #[cfg(feature = "nrf51")]
 use nrf51_hal::{pac, Clocks, clocks};
@@ -24,21 +22,27 @@ use nrf52840_hal::{pac, Clocks, clocks};
 #[app(device=crate::pac, dispatchers=[SWI0_EGU0, SWI1_EGU1])]
 mod app {
     use rtt_target::{rtt_init_print, rprintln};
+#[cfg(feature="nrf5x")]
+    use fugit::ExtU64;
 
     // provide monotonic scheduling for NRF5x hardware
-    use fugit::ExtU64;
+#[cfg(feature="nrf5x")]
     use crate::nrf_monotonic::MonotonicRtc;
+#[cfg(feature="nrf5x")]
     #[monotonic(binds=RTC0, default=true)]
+#[cfg(feature="nrf5x")]
     type Tonic = MonotonicRtc<crate::pac::RTC0>;
 
-    // use embedded_ble::Ble;
-    // choose controller
-// #[cfg(feature="embedded-ble-nrf5x")]
-    // use embedded_ble_nrf5x::Nrf5xBle;
+    // BLE stuff
+    //--------------------------------------------------------------------------------
+    use embedded_ble::Ble;
+    use embedded_ble::advertisements::AdFields;
+#[cfg(feature="nrf5x")]
+    use embedded_ble::nrf5x::Nrf5xHci;
 
     #[shared]
     struct Shared {
-        // ble: Ble<'static>,
+        ble: Ble<'static>,
     }
 
     #[local]
@@ -51,23 +55,22 @@ mod app {
         rprintln!("init");
 
         // configure RTC source clock (LFCLK) for NRF5x hardware
-        if cfg!(feature="embedded-ble-nrf5x") {
+        if cfg!(feature="nrf5x") {
             let _clocks = crate::Clocks::new(cx.device.CLOCK)
                 .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
                 .start_lfclk();
         }
 
-//         // TODO determine what this is (i.e. is there a mac address?)
-//         const ACCESS_ADDRESS:u32 = 0;
-//         // FIXME doesn't support nrf51 (which requires FICR)
-// #[cfg(feature="embedded-ble-nrf5x")]
-//         let ble_controller = Nrf5xBle::init(cx.device.RADIO, ACCESS_ADDRESS);
-
-//         let ble = Ble::new(ble_controller, "hello world");
-//         ble_advertiser::spawn().unwrap();
+        // BLE stuff
+        //--------------------------------------------------------------------------------
+#[cfg(feature="nrf5x")]
+        let hci = Nrf5xHci::init(cx.device.RADIO, cx.device.FICR);
+        let info = AdFields { local_name: Some("Rust Ble"), ..AdFields::default() };
+        let ble = Ble::new(hci, info);
+        ble_advertiser::spawn().unwrap();
 
         (Shared {
-            // ble,
+            ble,
          },
          Local {
          },
@@ -83,19 +86,19 @@ mod app {
         }
     }
 
-    // schedule for **lowest** priority (1)
-    // #[task(shared=[ble], priority=1)]
-    // fn ble_advertiser(mut cx:ble_advertiser::Context) {
-    //     cx.shared.ble.lock(|ble| {
-    //         // only advertise if we're not connected
-    //         if ! ble.is_connected() {
-    //             rprintln!("advertising...");
-    //             ble.advertise();
-    //         }
-    //     });
-    //     rprintln!("advertising done");
-    //     ble_advertiser::spawn_after(1.secs()).unwrap();
-    // }
+    // schedule for **minimal** priority
+    #[task(shared=[ble], priority=1)]
+    fn ble_advertiser(mut cx:ble_advertiser::Context) {
+        cx.shared.ble.lock(|ble| {
+            // only advertise if we're not connected
+            if ble.connections() == 0 {
+                rprintln!("advertising...");
+                ble.advertise();
+            }
+        });
+        rprintln!("advertising done");
+        ble_advertiser::spawn_after(1.secs()).unwrap();
+    }
 
     // schedule for **highest** priority
     // #[task(binds=RADIO, shared=[ble], priority=8)]
@@ -112,9 +115,10 @@ mod app {
     // schedule for high priority (apps responsive to state changes)
     // #[task(shared=[ble], priority=7)]
     // fn ble_worker(mut cx:ble_worker::Context) {
-    //     cx.shared.ble.lock(|ble| {
-    //         rprintln!("working...");
-    //         ble.work();
+    //     cx.shared.ble.lock(|_ble| {
+    //         rprintln!("ble work...");
+    //         // ble.work();
+    //         rprintln!("ble work done");
     //     });
     // }
 }
