@@ -30,5 +30,5 @@ impl<'a> Ble<'a> {
 }
 
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=225952
-trait BLE_HCI {
+trait BleHci {
 }

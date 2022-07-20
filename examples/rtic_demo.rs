@@ -38,7 +38,7 @@ mod app {
     use embedded_ble::Ble;
     use embedded_ble::advertisements::AdFields;
 #[cfg(feature="nrf5x")]
-    use embedded_ble::nrf5x::Nrf5xHci;
+    use embedded_ble::nrf5x::{Nrf5xHci, RadioMode};
 
     #[shared]
     struct Shared {
@@ -64,7 +64,7 @@ mod app {
         // BLE stuff
         //--------------------------------------------------------------------------------
 #[cfg(feature="nrf5x")]
-        let hci = Nrf5xHci::init(cx.device.RADIO, cx.device.FICR);
+        let hci = Nrf5xHci::new(cx.device.RADIO, RadioMode::OneMbit, cx.device.FICR);
         let info = AdFields { local_name: Some("Rust Ble"), ..AdFields::default() };
         let ble = Ble::new(hci, info);
         ble_advertiser::spawn().unwrap();
