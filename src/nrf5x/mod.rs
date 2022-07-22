@@ -1,5 +1,5 @@
 
-use nrf52832_pac::{RADIO, FICR};
+use nrf52832_pac::{RADIO, FICR, radio::txpower::TXPOWER_A};
 use core::ptr::{write_volatile, read_volatile};
 
 pub struct Nrf5xHci {
@@ -104,6 +104,10 @@ impl Nrf5xHci {
         self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(channel as u8) });
     }
 
+    fn set_txpower(&self, power:TXPOWER_A) {
+        self.radio.txpower.write(|w| w.txpower().variant(power))
+    }
+
     /// starts receive for a single packet
     /// upon a packet, the RADIO interrupt will fire (and the RADIO will be disabled)
     fn listen(&self, channel:Channel, buffer: &mut [u8]) -> bool {
@@ -120,10 +124,10 @@ impl Nrf5xHci {
 
         self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
 
-        // allow hardware to handle packets, only going into DISABLED if a valid packet was received
+        // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
-            .end_disable().set_bit()
-            .ready_start().set_bit()
+            .ready_start().set_bit()    // start listening
+            .end_disable().set_bit()    // disable radio upon a packet
             .address_bcstart().set_bit()
             .address_rssistart().set_bit()
             .disabled_rssistop().set_bit()
@@ -150,10 +154,10 @@ impl Nrf5xHci {
 
         self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
 
-        // allow hardware to handle packets, only going into DISABLED once transmitted
+        // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
-            .end_disable().set_bit()
-            .ready_start().set_bit()
+            .ready_start().set_bit()    // start sending
+            .end_disable().set_bit()    // disable radio upon completion
         );
 
         // await send
