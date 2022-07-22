@@ -13,18 +13,18 @@ pub struct Ble<'a> {
 }
 
 impl<'a> Ble<'a> {
-    // pub fn new(hci: Nrf5xHci, name:&'a str) -> Self
     pub fn new(hci:HCI, info:AdFields<'a>) -> Self
     {
         Self { hci, info }
     }
 
-    pub fn connections(self:&Self) -> u8 {
+    /// returns the number of active connections
+    pub fn connections(&self) -> usize {
         // FIXME determine number of connections
         return 0;
     }
 
-    pub fn advertise(self:&Self) {
+    pub fn advertise(&self) {
         // self.hci.advertise(self.info);
     }
 }
