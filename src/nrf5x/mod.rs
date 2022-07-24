@@ -1,4 +1,4 @@
-
+use crate::{Channel};
 use nrf52832_pac::{RADIO, FICR, radio::txpower::TXPOWER_A};
 use core::ptr::{write_volatile, read_volatile};
 
@@ -6,32 +6,14 @@ pub struct Nrf5xHci {
     radio: RADIO
 }
 
-#[derive(Copy, Clone)]
-enum Channel {
-    CH0,  CH1,  CH2,  CH3,  CH4,  CH5,  CH6,  CH7,  CH8,  CH9,
-    CH10, CH11, CH12, CH13, CH14, CH15, CH16, CH17, CH18, CH19,
-    CH20, CH21, CH22, CH23, CH24, CH25, CH26, CH27, CH28, CH29,
-    CH30, CH31, CH32, CH33, CH34, CH35, CH36, CH37, CH38, CH39
-}
-impl Channel {
-    fn frequency(&self) -> u8 {
-        const frequencies:[u8;40] = [
-            4, 6, 8, 10, 12, 14, 16, 18, 20, 22,    /* 0-9 */
-            24, 28, 30, 32, 34, 36, 38, 40, 42, 44, /* 10-19 */
-            46, 48, 50, 52, 54, 56, 58, 60, 62, 64, /* 20-29 */
-            66, 68, 70, 72, 74, 76, 78, 2, 26, 80,  /* 30-39 */
-        ];
-        return frequencies[*self as usize];
-    }
-}
 
-pub enum RadioMode { OneMbit, TwoMbit }
+pub enum RadioMode { Ble1Mbit, Ble2Mbit }
 impl Nrf5xHci {
     pub fn new(radio:RADIO, mode:RadioMode, _ficr:FICR) -> Self {
         // NOTE: the unsafe blocks are required per the PAC
         //      as they perform direct register access, their is no real concern.
         match mode {
-            RadioMode::OneMbit => {
+            RadioMode::Ble1Mbit => {
                 radio.mode.write(|w| w.mode().ble_1mbit());
                 radio.pcnf0.write(|w| unsafe{ w
                     .lflen().bits(8)
@@ -40,13 +22,13 @@ impl Nrf5xHci {
                     .plen()._8bit()
             });
             }
-            RadioMode::TwoMbit => {
-                radio.mode.write(|w| w.mode().ble_1mbit());
+            RadioMode::Ble2Mbit => {
+                radio.mode.write(|w| w.mode().ble_2mbit());
                 radio.pcnf0.write(|w| unsafe{ w
                     .lflen().bits(8)
                     .s0len().set_bit()
                     .s1len().bits(0)
-                    .plen()._16bit()
+                    .plen()._16bit()    // TODO is this correct for BLE 2MBIT?
                 });
             }
         }
@@ -93,9 +75,9 @@ impl Nrf5xHci {
         // }
         // using nimble's implementation for errata
         unsafe{ 
-            const undocumented:*mut u32 = 0x40001774 as *mut u32;
-            write_volatile(undocumented, 
-                read_volatile(undocumented) & 0xfffffffe | 0x01000000);
+            const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
+            write_volatile(UNDOCUMENTED, 
+                (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
         }
 
         self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
@@ -110,11 +92,43 @@ impl Nrf5xHci {
 
     /// starts receive for a single packet
     /// upon a packet, the RADIO interrupt will fire (and the RADIO will be disabled)
-    fn listen(&self, channel:Channel, buffer: &mut [u8]) -> bool {
-        // radio must be in disabled mode to start a new listen
+    // pub(crate) fn listen(&self, channel:Channel, buffer: &mut [u8]) -> bool {
+    //     // radio must be in disabled mode to start a new listen
+    //     if ! self.radio.state.read().state().is_disabled() {
+    //         return false;
+    //     }
+
+    //     // TODO determine if access_address and/or crcinit are relevant for listen
+    //     self.set_channel(channel, 0, 0);
+
+    //     // TODO support encryption (CCM)
+    //     // TODO support privacy (AAR)
+
+    //     self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
+
+    //     // allow hardware to handle packet and disable radio upon completion
+    //     self.radio.shorts.write(|w| w
+    //         .ready_start().set_bit()    // start listening
+    //         .end_disable().set_bit()    // disable radio upon a packet
+    //         .address_bcstart().set_bit()
+    //         .address_rssistart().set_bit()
+    //         .disabled_rssistop().set_bit()
+    //     );
+
+    //     // enable RADIO disabled interrupt (as "shorts" are enabled, the radio will be disabled upon a packet)
+    //     self.radio.intenset.write(|w| w.disabled().set());
+
+    //     todo!()
+    // }
+
+    /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
+    pub(crate) fn send(&self, channel:Channel, pdu: &[u8]) -> bool {
         if ! self.radio.state.read().state().is_disabled() {
             return false;
         }
+
+        // TODO debug: validate pdu buffer
+        // assert()
 
         // TODO determine if access_address and/or crcinit are relevant for listen
         self.set_channel(channel, 0, 0);
@@ -122,37 +136,7 @@ impl Nrf5xHci {
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
-        self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
-
-        // allow hardware to handle packet and disable radio upon completion
-        self.radio.shorts.write(|w| w
-            .ready_start().set_bit()    // start listening
-            .end_disable().set_bit()    // disable radio upon a packet
-            .address_bcstart().set_bit()
-            .address_rssistart().set_bit()
-            .disabled_rssistop().set_bit()
-        );
-
-        // enable RADIO disabled interrupt (as "shorts" are enabled, the radio will be disabled upon a packet)
-        self.radio.intenset.write(|w| w.disabled().set());
-
-        todo!()
-    }
-
-    /// sends a packet
-    /// NOTE: blocks until packet has been transmitted
-    fn send(&self, channel:Channel, buffer: &[u8]) -> bool {
-        if ! self.radio.state.read().state().is_disabled() {
-            return false;
-        }
-
-        // TODO determine if access_address and/or crcinit are relevant for listen
-        self.set_channel(channel, 0, 0);
-
-        // TODO support encryption (CCM)
-        // TODO support privacy (AAR)
-
-        self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
+        self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
@@ -160,11 +144,6 @@ impl Nrf5xHci {
             .end_disable().set_bit()    // disable radio upon completion
         );
 
-        // await send
-        while ! self.radio.state.read().state().is_disabled() {
-            // wait
-        }
-
-        todo!()
+        return true
     }
 }

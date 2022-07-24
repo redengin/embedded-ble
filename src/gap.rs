@@ -1,0 +1,57 @@
+/// https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Generic%20Access%20Profile.pdf
+pub enum DataTypes {
+    Flags                           = 0x01,
+    Incomplete16bitServiceUuids     = 0x02,
+    Complete16bitServiceUuids       = 0x03,
+    Incomplete32bitServiceUuids     = 0x04,
+    Complete32bitServiceUuids       = 0x05,
+    Incomplete128bitServiceUuids    = 0x06,
+    Complete128bitServiceUuids      = 0x07,
+    ShortenedLocalName              = 0x08,
+    CompleteLocalName               = 0x09,
+    TxPowerLevel                    = 0x0A,
+    ClassOfDevice                   = 0x0D,
+    SimplePairingHashC              = 0x0E,
+    SimplePairingRandomizer         = 0x0F,
+    SecurityManagerTkValue          = 0x10,
+    SecurityManagerOutOfBandFlags   = 0x11,
+    SlaveConnectionIntervalRange    = 0x12,
+    List16bitServiceSolicitation    = 0x14,
+    List128bitServiceSolicitation   = 0x15,
+    ServiceDataUuid16               = 0x16,
+    PublicTargetAddress             = 0x17,
+    RandomTargetAddress             = 0x18,
+    Appearance                      = 0x19,
+    AdvertisingInterval             = 0x1A,
+    LeBluetoothDeviceAddress        = 0x1B,
+    LeRole                          = 0x1C,
+    SimplePairingHashC56            = 0x1D,
+    SimplePairingRandomizerR256     = 0x1E,
+    List32bitServiceSolicitation    = 0x1F,
+    ServiceData32bitUuid            = 0x20,
+    ServiceData128bitUuid           = 0x21,
+    LeSecureConnectionsConfirmValue = 0x22,
+    LeSecureConnectionsRandomValue  = 0x23,
+    Uri                             = 0x24,
+    IndoorPositioning               = 0x25,
+    TransportDiscoveryData          = 0x26,
+    LeSupportedFeatures             = 0x27,
+    ChannelMapUpdateIndication      = 0x28,
+    PbAdv                           = 0x29,
+    MeshMessage                     = 0x2A,
+    MeshBeacon                      = 0x2B,
+    BIGInfo                         = 0x2C,
+    BroadCastCode                   = 0x2D,
+    ResolvableSetIdentifier         = 0x2E,
+    AdvertisingIntervalLong         = 0x2F,
+    BroadcastName                   = 0x30,
+    ThreeDInformation               = 0x3D,
+    ManufacturerSpecificData        = 0xFF,
+}
+
+pub(crate) fn write_local_name(buffer:&mut [u8], name:&str) -> usize {
+    assert!(buffer.len() > name.len());
+
+
+    return 0
+}
