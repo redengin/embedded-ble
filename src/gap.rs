@@ -1,3 +1,7 @@
+/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.455603
+pub const AD_ACCESS_ADDRESS:u32 = 0x8E89BED6;
+/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.453964
+pub const AD_CRCINIT:u32 = 0x555555;
 
 #[derive(Default)]
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1070566
@@ -190,7 +194,7 @@ impl<'a> AdFields<'a> {
         }
 
         // write the length
-        assert!(pdu_size < u8::MAX as usize);
+        assert!(pdu_size <= u8::MAX as usize);
         buffer[1] = pdu_size as u8;
         pdu_size += 1;
 

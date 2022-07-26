@@ -122,7 +122,7 @@ impl Nrf5xHci {
     // }
 
     /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
-    pub(crate) fn send(&self, channel:Channel, pdu: &[u8]) -> bool {
+    pub(crate) fn send(&self, channel:Channel, access_address:u32, crcinit:u32, pdu: &[u8]) -> bool {
         if ! self.radio.state.read().state().is_disabled() {
             return false;
         }
@@ -131,7 +131,7 @@ impl Nrf5xHci {
         // assert()
 
         // TODO determine if access_address and/or crcinit are relevant for listen
-        self.set_channel(channel, 0, 0);
+        self.set_channel(channel, access_address, crcinit);
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)

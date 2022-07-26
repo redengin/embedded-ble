@@ -92,7 +92,10 @@ mod app {
             // only advertise if we're not connected
             if ble.connections() == 0 {
                 rprintln!("advertising...");
-                ble.advertise(embedded_ble::gap::PDU_TYPE::ADV_NONCONN_IND, embedded_ble::Channel::CH37);
+                ble.advertise(
+                    embedded_ble::gap::PDU_TYPE::ADV_NONCONN_IND,
+                    embedded_ble::Channel::CH37
+                );
                 // TODO advertise on CH38 and CH39
             }
         });

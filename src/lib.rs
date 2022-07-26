@@ -34,7 +34,12 @@ impl<'a> Ble<'a> {
         assert!([Channel::CH37, Channel::CH38, Channel::CH39].contains(&channel));
 
         let mut buffer:[u8;255] = [0;255];
-        self.hci.send(channel, self.ad_fields.to_pdu(&mut buffer, pdu_type));
+        self.hci.send(
+            channel,
+            gap::AD_ACCESS_ADDRESS,
+            gap::AD_CRCINIT,
+            self.ad_fields.to_pdu(&mut buffer, pdu_type)
+        );
     }
 }
 
