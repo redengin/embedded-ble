@@ -35,8 +35,7 @@ mod app {
 
     // BLE stuff
     //--------------------------------------------------------------------------------
-    use embedded_ble::Ble;
-    use embedded_ble::advertisements::AdFields;
+    use embedded_ble::{Ble, gap::AdFields};
 #[cfg(feature="nrf5x")]
     use embedded_ble::nrf5x::{Nrf5xHci, RadioMode};
 
@@ -65,7 +64,7 @@ mod app {
         //--------------------------------------------------------------------------------
 #[cfg(feature="nrf5x")]
         let hci = Nrf5xHci::new(cx.device.RADIO, RadioMode::Ble1Mbit, cx.device.FICR);
-        let info = AdFields { local_name: Some("Rust Ble"), ..AdFields::default() };
+        let info = AdFields { local_name: Some("Rust Ble Demo"), ..AdFields::default() };
         let ble = Ble::new(hci, info);
         ble_advertiser::spawn().unwrap();
 
@@ -93,7 +92,7 @@ mod app {
             // only advertise if we're not connected
             if ble.connections() == 0 {
                 rprintln!("advertising...");
-                ble.advertise(embedded_ble::advertisements::PDU_TYPE::ADV_NONCONN_IND, embedded_ble::Channel::CH37);
+                ble.advertise(embedded_ble::gap::PDU_TYPE::ADV_NONCONN_IND, embedded_ble::Channel::CH37);
                 // TODO advertise on CH38 and CH39
             }
         });

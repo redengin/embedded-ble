@@ -1,3 +1,220 @@
+
+#[derive(Default)]
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1070566
+/// https://www.novelbits.io/bluetooth-low-energy-advertisements-part-1/
+pub struct AdFields<'a> {
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999520
+    // TODO Service UUID
+    pub _service_uuid:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1004814
+    pub local_name: Option<&'a str>,
+    pub short_name: Option<&'a str>,
+
+    /// see enum Flags (https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589)
+    pub flags: Option<u8>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999668
+    pub manufacturer_specific_data: Option<&'a [u8]>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999686
+    pub tx_power_level: Option<i8>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999709
+    // TODO SECURE SIMPLE PAIRING OUT OF BAND
+    pub _secure_simple_pairing_oob:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999768
+    // TODO SECURITY MANAGER OUT OF BAND
+    pub _security_manager_oob:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999818
+    // TODO SECURITY MANAGER TK VALUE
+    pub _security_manager_tk_value:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999838
+    // TODO PERIPHERAL CONNECTION INTERVAL RANGE
+    pub _peripheral_connection_interval_range:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999871
+    // TODO SERVICE SOLICITATION
+    pub _service_solicitation:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999894
+    // TODO SERVICE DATA
+    pub _service_data:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999913
+    /// https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
+    pub appearance: Option<u16>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999932
+    // TODO PUBLIC TARGET ADDRESS
+    pub _public_target_address:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999953
+    // TODO RANDOM TARGET ADDRESS
+    pub _random_target_address:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1004048
+    // TODO ADVERTISING INTERVAL
+    pub _advertising_interval:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005265
+    pub le_bluetooth_device_address: Option<&'a LeBluetoothDeviceAddress>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005342
+    pub le_role: Option<LE_ROLE>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005559
+    pub uri: Option<&'a str>,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1054608
+    // TODO LE SUPPORTED FEATURES
+    pub _le_supported_features:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1055008
+    // TODO CHANNEL MAP UPDATE INDICATION
+    pub _channel_map_update_indication:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1176955
+    // TODO BIGINFO
+    pub _biginfo:u8,
+
+    /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1177011
+    // TODO BROADCAST_CODE
+    pub _broadcast_code:u8,
+}
+
+impl<'a> AdFields<'a> {
+    /// places ad structures as long as they will fit in packet
+    pub fn to_pdu(&'a self, buffer:&'a mut [u8], pdu_type:PDU_TYPE) -> &[u8]
+    {
+        let mut pdu_size = 0;
+
+        // add the header
+        buffer[0] = pdu_type as u8;  // TODO handle ChSel, TxAdd, RxAdd
+        pdu_size += 1;
+
+        // add local_name
+        match self.local_name {
+            Some(name) => if buffer.len() >= (pdu_size + 1 + name.len()) {
+                buffer[pdu_size] = DataTypes::CompleteLocalName as u8;
+                pdu_size += 1;
+                buffer[pdu_size..(pdu_size+name.len())].copy_from_slice(name.as_bytes());
+                pdu_size += name.len();
+            }
+            None => {}
+        }
+        // add short_name
+        match self.short_name {
+            Some(name) => if buffer.len() >= (pdu_size + 1 + name.len()) {
+                buffer[pdu_size] = DataTypes::ShortenedLocalName as u8;
+                pdu_size += 1;
+                buffer[pdu_size..].copy_from_slice(name.as_bytes());
+                pdu_size += name.len();
+            }
+            None => {}
+        }
+        // add flags
+        match self.flags {
+            Some(flags) => if buffer.len() >= (pdu_size + 1 + 1) {
+                buffer[pdu_size] = DataTypes::Flags as u8;
+                pdu_size += 1;
+                buffer[pdu_size] = flags;
+                pdu_size += 1;
+            }
+            None => {}
+        }
+        // add manufacturer data
+        match self.manufacturer_specific_data {
+            Some(data) => if buffer.len() >= (pdu_size + 1 + data.len()) {
+                // manufacturer data must have 2 byte company identifier to be valid
+                assert!(data.len() >= 2);
+                buffer[pdu_size] = DataTypes::ManufacturerSpecificData as u8;
+                pdu_size += 1;
+                buffer[pdu_size..].copy_from_slice(data);
+                pdu_size += data.len();
+            }
+            None => {}
+        }
+        // add tx_power_level
+        match self.tx_power_level {
+            Some(level) => if buffer.len() >= (pdu_size + 1 + 1) {
+                buffer[pdu_size] = DataTypes::TxPowerLevel as u8;
+                pdu_size += 1;
+                buffer[pdu_size] = level as u8;
+                pdu_size += 1;
+            }
+            None => {}
+        }
+        // add appearance
+        match self.appearance {
+            Some(id) => if buffer.len() >= (pdu_size + 1 + 2) {
+                buffer[pdu_size] = DataTypes::Appearance as u8;
+                pdu_size += 1;
+                buffer[pdu_size..].copy_from_slice(&id.to_le_bytes());
+                pdu_size += 2;
+            }
+            None => {}
+        }
+        // add le device address
+        match self.le_bluetooth_device_address {
+            Some(address) => if buffer.len() >= (pdu_size + 1 + address.len()) {
+                buffer[pdu_size] = DataTypes::LeBluetoothDeviceAddress as u8;
+                pdu_size += 1;
+                buffer[pdu_size..].copy_from_slice(address);
+                pdu_size += address.len();
+            }
+            None => {}
+        }
+        // add le role
+        match self.le_role{
+            Some(role) => if buffer.len() >= (pdu_size + 1 + 1) {
+                buffer[pdu_size] = DataTypes::Appearance as u8;
+                pdu_size += 1;
+                buffer[pdu_size] = role as u8;
+                pdu_size += 1;
+            }
+            None => {}
+        }
+        // add uri
+        match self.uri {
+            Some(uri) => if buffer.len() >= (pdu_size + 1 + uri.len()) {
+                buffer[pdu_size] = DataTypes::Uri as u8;
+                pdu_size += 1;
+                buffer[pdu_size..].copy_from_slice(uri.as_bytes());
+                pdu_size += uri.len();
+            }
+            None => {}
+        }
+
+        // write the length
+        assert!(pdu_size < u8::MAX as usize);
+        buffer[1] = pdu_size as u8;
+        pdu_size += 1;
+
+        &buffer[..pdu_size]
+    }
+}
+
+// TODO find BLE specification link
+/// https://novelbits.io/bluetooth-low-energy-advertisements-part-1/
+#[allow(non_camel_case_types)]
+pub enum PDU_TYPE {
+    ADV_IND,            // Connectable Scannable Undirected advertising
+    ADV_DIRECT_IND,     // Connectable Directed advertising
+    ADV_NONCONN_IND,    // Non-Connectable Non-Scannable Undirected advertising
+    ADV_SCAN_IND,       // Scannable Undirected advertising
+    // Scanning: enables devices to broadcast more advertising data than is allowed in a single advertising packet.
+    SCAN_REQ,
+    SCAN_RSP,
+    // Initiating: establishing a connection between a peripheral device and a central device
+    CONNECT_IND,        // this is the connection request packet sent on one of the Primary advertising channels
+    // Extending: option to advertise on the Secondary advertising channels in addition to the Primary advertising channels
+    ADV_EXT_IND         // used for all advertising types except ADV_IND
+}
+
 /// https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Generic%20Access%20Profile.pdf
 pub enum DataTypes {
     Flags                           = 0x01,
@@ -49,9 +266,23 @@ pub enum DataTypes {
     ManufacturerSpecificData        = 0xFF,
 }
 
-pub(crate) fn write_local_name(buffer:&mut [u8], name:&str) -> usize {
-    assert!(buffer.len() > name.len());
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
+enum Flags {
+    LeLimitedDiscoverable   = 0b00001,
+    LeGeneralDiscoverable   = 0b00010,
+    LeAndBrEdrCapable       = 0b00100,
+}
 
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
+type LeBluetoothDeviceAddress = [u8;7];
 
-    return 0
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005585
+#[derive(Copy, Clone)]
+pub enum LE_ROLE {
+    ONLY_PERIPHERAL_ROLE                    = 0x00,
+    ONLY_CENTRAL_ROLE                       = 0x01,
+    /// peripheral role preferred
+    PERIPHERAL_AND_CENTRAL_ROLE_PERIPHERAL  = 0x02,
+    /// central role preferred
+    PERIPHERAL_AND_CENTRAL_ROLE_CENTRAL     = 0x03,
 }

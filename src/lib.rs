@@ -1,8 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
-pub(crate) mod gap;
-pub mod advertisements;
-use advertisements::AdFields;
+pub mod gap;
 #[cfg(feature="nrf5x")]
 pub mod nrf5x;
 #[cfg(feature="nrf5x")]
@@ -13,11 +11,11 @@ const BLE_PDU_SIZE_MAX:usize = 258; // [header (1 byte), length(1 byte), payload
 
 pub struct Ble<'a> {
     hci: HCI,
-    ad_fields: AdFields<'a>,
+    ad_fields: gap::AdFields<'a>,
 }
 
 impl<'a> Ble<'a> {
-    pub fn new(hci:HCI, ad_fields:AdFields<'a>) -> Self
+    pub fn new(hci:HCI, ad_fields:gap::AdFields<'a>) -> Self
     {
         Self {
             hci,
@@ -31,13 +29,12 @@ impl<'a> Ble<'a> {
         return 0
     }
 
-    pub fn advertise(&self, pdu_type:advertisements::PDU_TYPE, channel:Channel) {
+    pub fn advertise(&self, pdu_type:gap::PDU_TYPE, channel:Channel) {
         // advertising channels are CH37, CH38, CH39
         assert!([Channel::CH37, Channel::CH38, Channel::CH39].contains(&channel));
 
-        let mut pdu:[u8;255] = [0;255];
-        self.ad_fields.to_pdu(&mut pdu, pdu_type);
-        self.hci.send(channel, &pdu);
+        let mut buffer:[u8;255] = [0;255];
+        self.hci.send(channel, self.ad_fields.to_pdu(&mut buffer, pdu_type));
     }
 }
 
