@@ -245,9 +245,9 @@ impl<'a> AdFields<'a> {
             None => {}
         }
 
-        // write the length
+        // write the payload length
         assert!(pdu_size <= u8::MAX as usize);
-        buffer[1] = pdu_size as u8;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
 
         &buffer[..pdu_size]
     }
@@ -343,7 +343,7 @@ pub enum LE_ROLE {
 }
 
 #[cfg(test)]
-mod tests {
+mod adfields_to_pdu {
     use super::*;
 
     #[test]
@@ -355,6 +355,7 @@ mod tests {
             let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
             const AD_TYPE_SIZE:usize = 1;
             assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), pdu.len());
+            assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), pdu[1] as usize);
             assert_eq!(DataTypes::CompleteLocalName as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
             assert_eq!(*name.as_bytes(), pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
         }
@@ -364,6 +365,7 @@ mod tests {
             let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
             const AD_TYPE_SIZE:usize = 1;
             assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), pdu.len());
+            assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), pdu[1] as usize);
             assert_eq!(DataTypes::ShortenedLocalName as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
             assert_eq!(*name.as_bytes(), pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
         }
@@ -376,6 +378,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu[1] as usize);
         assert_eq!(DataTypes::Flags as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(flags, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
     }
@@ -387,6 +390,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + data.len()), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + data.len()), pdu[1] as usize);
         assert_eq!(DataTypes::ManufacturerSpecificData as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(data, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
     }
@@ -398,6 +402,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu[1] as usize);
         assert_eq!(DataTypes::TxPowerLevel as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(tx_power_level as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
     }
@@ -409,6 +414,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), pdu[1] as usize);
         assert_eq!(DataTypes::Appearance as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(appearance.to_le_bytes(), pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
     }
@@ -420,6 +426,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + le_bluetooth_device_address.len()), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + le_bluetooth_device_address.len()), pdu[1] as usize);
         assert_eq!(DataTypes::LeBluetoothDeviceAddress as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(le_bluetooth_device_address, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
     }
@@ -431,6 +438,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), pdu[1] as usize);
         assert_eq!(DataTypes::LeRole as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(le_role as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
     }
@@ -442,6 +450,7 @@ mod tests {
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), pdu.len());
+        assert_eq!((PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), pdu[1] as usize);
         assert_eq!(DataTypes::Uri as u8, pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE]);
         assert_eq!(*uri.as_bytes(), pdu[PDU_HEADER_SIZE + PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
     }
@@ -453,6 +462,7 @@ mod tests {
         let mut buffer:[u8; crate::BLE_PDU_SIZE_MAX] = [0; crate::BLE_PDU_SIZE_MAX];
         let pdu = ad_fields.to_pdu(&mut buffer, PDU_TYPE::ADV_DIRECT_IND);
         const AD_TYPE_SIZE:usize = 1;
-        assert_eq!((PDU_HEADER_SIZE + (2 * PDU_AD_STRUCTURE_LENGTH_SIZE) + (2 * AD_TYPE_SIZE) + (2 * name.len())), pdu.len());
+        assert_eq!((PDU_HEADER_SIZE + (2 * (PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()))), pdu.len());
+        assert_eq!(((2 * (PDU_AD_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()))), pdu[1] as usize);
     }
 }

@@ -1,6 +1,7 @@
 use crate::{Channel};
 use nrf52832_pac::{RADIO, FICR, radio::txpower::TXPOWER_A};
 use core::ptr::{write_volatile, read_volatile};
+use core::sync::atomic::{compiler_fence, Ordering};
 
 pub struct Nrf5xHci {
     radio: RADIO
@@ -16,8 +17,8 @@ impl Nrf5xHci {
             RadioMode::Ble1Mbit => {
                 radio.mode.write(|w| w.mode().ble_1mbit());
                 radio.pcnf0.write(|w| unsafe{ w
-                    .lflen().bits(8)
                     .s0len().set_bit()
+                    .lflen().bits(8)
                     .s1len().bits(0)
                     .plen()._8bit()
             });
@@ -28,7 +29,7 @@ impl Nrf5xHci {
                     .lflen().bits(8)
                     .s0len().set_bit()
                     .s1len().bits(0)
-                    .plen()._16bit()    // TODO is this correct for BLE 2MBIT?
+                    .plen()._16bit()
                 });
             }
         }
@@ -140,9 +141,14 @@ impl Nrf5xHci {
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
-            .ready_start().set_bit()    // start sending
-            .end_disable().set_bit()    // disable radio upon completion
+            .ready_start().enabled()
+            .end_disable().enabled()
         );
+
+        // "Preceding reads and writes cannot be moved past subsequent writes."
+        compiler_fence(Ordering::Release);
+        // kick off the transmission
+        self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
 
         return true
     }
