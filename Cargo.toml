@@ -19,6 +19,7 @@ nrf52811-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52832-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52833-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52840-pac = { version="0.11", optional=true, features=["rt"] }
+rtt-target = { version="0.3", features=["cortex-m"]}
 
 # dependencies for the examples
 [target.'cfg(target_arch="arm")'.dev-dependencies]

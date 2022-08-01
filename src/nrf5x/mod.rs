@@ -1,7 +1,8 @@
-use crate::{Channel};
+use crate::{PDU_SIZE_MAX, link_layer};
 use nrf52832_pac::{RADIO, FICR, radio::txpower::TXPOWER_A};
 use core::ptr::{write_volatile, read_volatile};
 use core::sync::atomic::{compiler_fence, Ordering};
+use rtt_target::{rprintln};
 
 pub struct Nrf5xHci {
     radio: RADIO
@@ -26,14 +27,15 @@ impl Nrf5xHci {
             RadioMode::Ble2Mbit => {
                 radio.mode.write(|w| w.mode().ble_2mbit());
                 radio.pcnf0.write(|w| unsafe{ w
-                    .lflen().bits(8)
                     .s0len().set_bit()
+                    .lflen().bits(8)
                     .s1len().bits(0)
                     .plen()._16bit()
                 });
             }
         }
         radio.pcnf1.write(|w| unsafe{ w
+            .maxlen().bits(PDU_SIZE_MAX as u8)
             .endian().little()
             .balen().bits(3)
             .whiteen().enabled()
@@ -52,13 +54,16 @@ impl Nrf5xHci {
         // configure interframe spacing
         radio.tifs.write(|w| unsafe{ w.tifs().bits(150) });
 
+        // set transmit power
+        radio.txpower.write(|w| w.txpower().pos4d_bm());
+
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
         
         Self{radio}
     }
 
-    fn set_channel(&self, channel:Channel, access_address:u32, crcinit:u32) {
+    fn set_channel(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32) {
         // set the access address
         self.radio.base0.write(|w| unsafe{ w.base0().bits(access_address << 8) });
         self.radio.prefix0.write(|w| unsafe{ w
@@ -84,7 +89,7 @@ impl Nrf5xHci {
         self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
 
         self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
-        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(channel as u8) });
+        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(0b01000000 | channel as u8)});
     }
 
     fn set_txpower(&self, power:TXPOWER_A) {
@@ -123,7 +128,7 @@ impl Nrf5xHci {
     // }
 
     /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
-    pub(crate) fn send(&self, channel:Channel, access_address:u32, crcinit:u32, pdu: &[u8]) -> bool {
+    pub(crate) fn send(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32, pdu: &[u8]) -> bool {
         if ! self.radio.state.read().state().is_disabled() {
             return false;
         }
@@ -137,7 +142,10 @@ impl Nrf5xHci {
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
-        self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
+        // rprintln!("{:?}", pdu);
+        // self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
+        let buf:[u8;39] = [66, 28, 201, 2, 116, 131, 170, 8, 21, 9, 88, 117, 115, 116, 121, 32, 66, 101, 97, 99, 111, 110, 32, 40, 110, 82, 70, 53, 50, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        self.radio.packetptr.write(|w| unsafe{ w.bits(buf.as_ptr() as u32) });
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
@@ -149,6 +157,8 @@ impl Nrf5xHci {
         compiler_fence(Ordering::Release);
         // kick off the transmission
         self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
+
+        // assert!(! self.radio.state.read().state().is_disabled());
 
         return true
     }
