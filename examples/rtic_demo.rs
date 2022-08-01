@@ -93,7 +93,7 @@ mod app {
             if ble.connections() == 0 {
                 rprintln!("advertising...");
                 ble.advertise(
-                    embedded_ble::link_layer::AD_PDU_TYPE::ADV_IND,
+                    embedded_ble::link_layer::ADV_PDU_TYPE::ADV_IND,
                     embedded_ble::link_layer::Channel::CH37
                 );
                 // TODO advertise on CH38 and CH39

@@ -142,10 +142,10 @@ impl Nrf5xHci {
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
-        // rprintln!("{:?}", pdu);
-        // self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
-        let buf:[u8;39] = [66, 28, 201, 2, 116, 131, 170, 8, 21, 9, 88, 117, 115, 116, 121, 32, 66, 101, 97, 99, 111, 110, 32, 40, 110, 82, 70, 53, 50, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        self.radio.packetptr.write(|w| unsafe{ w.bits(buf.as_ptr() as u32) });
+        rprintln!("{:?}", pdu);
+        self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
+        // let buf:[u8;39] = [66, 28, 201, 2, 116, 131, 170, 8, 21, 9, 88, 117, 115, 116, 121, 32, 66, 101, 97, 99, 111, 110, 32, 40, 110, 82, 70, 53, 50, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        // self.radio.packetptr.write(|w| unsafe{ w.bits(buf.as_ptr() as u32) });
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w

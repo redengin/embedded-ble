@@ -8,6 +8,8 @@ pub mod nrf5x;
 #[cfg(feature="nrf5x")]
 use nrf5x::{Nrf5xHci as HCI};
 
+use crate::link_layer::{AdvPdu, ChSel, AdvA};
+
 #[allow(unused)]
 const ADV_PDU_SIZE_MAX:usize = 1 + 1 + 6 + 31; // header + length + AdvA + AdvData
 #[allow(unused)]
@@ -33,13 +35,14 @@ impl<'a> Ble<'a> {
         return 0
     }
 
-    pub fn advertise(&self, pdu_type:link_layer::ADV_PDU_TYPE, channel:Channel) {
+    pub fn advertise(&self, _pdu_type:link_layer::ADV_PDU_TYPE, channel:Channel) {
         // advertising channels are CH37, CH38, CH39
         assert!([Channel::CH37, Channel::CH38, Channel::CH39].contains(&channel));
 
         let mut buffer:[u8;ADV_PDU_SIZE_MAX] = [0;ADV_PDU_SIZE_MAX];
-        // FIXME create pdu per link_layer
-        let pdu = &buffer;
+        let adv_a = AdvA::Public([0;6]);
+        let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &adv_a, &self.ad_fields)
+            .to_buffer(&mut buffer);
         self.hci.send(
             channel,
             gap::AD_ACCESS_ADDRESS,
