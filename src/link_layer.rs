@@ -1,4 +1,4 @@
-use crate::{gap::AdFields};
+use crate::{gap::AdFields, ADV_PDU_SIZE_MAX};
 
 type AccessAddress = u32;
 /// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.455603
@@ -79,10 +79,11 @@ impl<'a> AdvPdu<'a> {
     {
         let mut pdu_size = 0;
 
-        const TYPE_SHIFT:usize = 4;
-        const CHSEL_SHIFT:usize = 2;
-        const TXADD_SHIFT:usize = 1;
-        const RXADD_SHIFT:usize = 0;
+        // note the BLE spec is LSB -> MSB
+        const TYPE_SHIFT:usize = 0;
+        const CHSEL_SHIFT:usize = 5;
+        const TXADD_SHIFT:usize = 6;
+        const RXADD_SHIFT:usize = 7;
 
         // set the pdu type
         buffer[0] = match self {
@@ -90,25 +91,25 @@ impl<'a> AdvPdu<'a> {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
                 // chsel bit
-                |   (match chsel { ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a { TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
             },
             AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
                 // chsel bit
-                |   (match chsel { ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a { TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
                 // rxadd bit
-                |   (match target_a { TxRxAdvAddress::Public(..) => 1, _ => 0} << RXADD_SHIFT)
+                |   (match target_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << RXADD_SHIFT)
             },
             AdvPdu::AdvNonConnInd(adv_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
                 // txadd bit
-                |   (match adv_a { TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
             },
         };
         pdu_size += 1;
@@ -157,8 +158,9 @@ impl<'a> AdvPdu<'a> {
                 ad_fields.write(&mut buffer[pdu_size..])
             }
         };
-        // let advData = self[3].write(&mut buffer[pdu_size..]);
         pdu_size += adv_data.len();
+
+        // TODO assert pdu_size per BLE spec
 
         // set the length field (size - two bytes header)
         buffer[1] = (pdu_size - 2) as u8;
@@ -169,17 +171,103 @@ impl<'a> AdvPdu<'a> {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod AdvPdu_to_buffer {
-    // use super::*;
+    use nrf52832_pac::ppi::CH;
 
-    // #[test]
-    // #[should_panic]
-    // fn buffer_size_assertion() {
-    //     let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
-    //     let tx_address:AdvAddress = [0;6];
-    //     let adv_A = AdvA::Public(tx_address);
-    //     let ad_fields = AdFields {..Default::default()};
-    //     AdvPdu::ADV_IND(ChSel::Unsupported, &adv_A, &ad_fields).to_buffer(&mut buffer);
-    // }
+    use super::*;
 
+    const ADVA_PUBLIC:AdvA = AdvA::Public([0, 0, 0, 0, 0, 0]);
+    const ADVA_RANDOM:AdvA = AdvA::RandomStatic([0, 0, 0, 0, 0, 0]);
+    const TARGETA_PUBLIC:TargetA = TargetA::Public([0, 0, 0, 0, 0, 0]);
+    const TARGETA_RANDOM:TargetA = TargetA::RandomStatic([0, 0, 0, 0, 0, 0]);
 
+    #[test]
+    fn adv_ind_public() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &ADVA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(64, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_ind_chsel_public() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvInd(ChSel::Supported, &ADVA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(96, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_ind_random() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &ADVA_RANDOM, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(0, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_ind_chsel_random() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvInd(ChSel::Supported, &ADVA_RANDOM, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(32, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_directind_public_public() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvDirectInd(ChSel::Unsupported, &ADVA_PUBLIC, &TARGETA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(193, pdu[0]); // pdu type
+        assert_eq!(12, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_directind_random_public() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvDirectInd(ChSel::Unsupported, &ADVA_RANDOM, &TARGETA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(129, pdu[0]); // pdu type
+        assert_eq!(12, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_directind_public_random() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvDirectInd(ChSel::Unsupported, &ADVA_PUBLIC, &TARGETA_RANDOM, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(65, pdu[0]); // pdu type
+        assert_eq!(12, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_directind_random_random() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvDirectInd(ChSel::Unsupported, &ADVA_RANDOM, &TARGETA_RANDOM, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(1, pdu[0]); // pdu type
+        assert_eq!(12, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_nonconnind_public() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvNonConnInd(&ADVA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(66, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
+    #[test]
+    fn adv_nonconnind_random() {
+        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX + 1] = [0; crate::ADV_PDU_SIZE_MAX + 1];
+
+        let empty_ad_fields:AdFields = AdFields{..Default::default()};
+        let pdu = AdvPdu::AdvNonConnInd(&ADVA_RANDOM, &empty_ad_fields).to_buffer(&mut buffer);
+        assert_eq!(2, pdu[0]); // pdu type
+        assert_eq!(6, pdu[1]);  // pdu size
+    }
 }

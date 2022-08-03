@@ -27,7 +27,7 @@ mod app {
 
     // provide monotonic scheduling for NRF5x hardware
 #[cfg(feature="nrf5x")]
-    use crate::nrf_monotonic::MonotonicRtc;
+    use crate::nrf5x_monotonic::MonotonicRtc;
 #[cfg(feature="nrf5x")]
     #[monotonic(binds=RTC0, default=true)]
 #[cfg(feature="nrf5x")]
@@ -53,19 +53,15 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
-        // configure RTC source clock (LFCLK) for NRF5x hardware
-        if cfg!(feature="nrf5x") {
-            let _clocks = crate::Clocks::new(cx.device.CLOCK)
-                .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
-                .start_lfclk();
-        }
+#[cfg(feature="nrf5x")]
+        // configure NRF5X clocks (RTC for monotonic, hfosc for BLE)
+        crate::nrf5x_configure_clocks(cx.device.CLOCK);
 
         // BLE stuff
         //--------------------------------------------------------------------------------
 #[cfg(feature="nrf5x")]
         let hci = Nrf5xHci::new(cx.device.RADIO, RadioMode::Ble1Mbit, cx.device.FICR);
-        // let info = AdFields { local_name: Some("Rust Ble Demo"), ..AdFields::default() };
-        let info = AdFields { local_name: Some("Rusty Beacon (nRF52)"), ..AdFields::default() };
+        let info = AdFields { local_name: Some("EmbeddedBle Demo"), ..AdFields::default() };
 
         let ble = Ble::new(hci, info);
         ble_advertiser::spawn().unwrap();
@@ -128,9 +124,18 @@ mod app {
     // }
 }
 
-
 #[cfg(feature="nrf5x")]
-mod nrf_monotonic {
+fn nrf5x_configure_clocks(clock:crate::pac::CLOCK) {
+    // configure RTC source clock (LFCLK) for NRF5x hardware
+    if cfg!(feature="nrf5x") {
+        crate::Clocks::new(clock)
+            .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
+            .start_lfclk()
+            .enable_ext_hfosc();
+    }
+}
+#[cfg(feature="nrf5x")]
+mod nrf5x_monotonic {
     //------------------------------------------------------------------------------
     // RTIC Monotonic impl for the RTCs (https://github.com/eflukx/rtic-rtc-example)
     use crate::pac::{rtc0, RTC0, RTC1, RTC2};

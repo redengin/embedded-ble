@@ -114,11 +114,11 @@ impl Nrf5xHci {
         //     write_volatile(undocumented, read_volatile(undocumented) | (1 << 10));
         // }
         // using nimble's implementation for errata
-        unsafe{ 
-            const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
-            write_volatile(UNDOCUMENTED, 
-                (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
-        }
+        // unsafe{ 
+        //     const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
+        //     write_volatile(UNDOCUMENTED, 
+        //         (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
+        // }
     }
 
     // fn set_txpower(&self, power:TXPOWER_A) {
@@ -171,11 +171,8 @@ impl Nrf5xHci {
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
-        // pdu[0] = 66;
         rprintln!("{:?}", pdu);
         self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
-        // let buf:[u8;39] = [66, 28, 201, 2, 116, 131, 170, 8, 21, 9, 88, 117, 115, 116, 121, 32, 66, 101, 97, 99, 111, 110, 32, 40, 110, 82, 70, 53, 50, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        // self.radio.packetptr.write(|w| unsafe{ w.bits(buf.as_ptr() as u32) });
         self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
 
         // allow hardware to handle packet and disable radio upon completion
