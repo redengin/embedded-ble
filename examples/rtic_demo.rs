@@ -64,7 +64,9 @@ mod app {
         //--------------------------------------------------------------------------------
 #[cfg(feature="nrf5x")]
         let hci = Nrf5xHci::new(cx.device.RADIO, RadioMode::Ble1Mbit, cx.device.FICR);
-        let info = AdFields { local_name: Some("Rust Ble Demo"), ..AdFields::default() };
+        // let info = AdFields { local_name: Some("Rust Ble Demo"), ..AdFields::default() };
+        let info = AdFields { local_name: Some("Rusty Beacon (nRF52)"), ..AdFields::default() };
+
         let ble = Ble::new(hci, info);
         ble_advertiser::spawn().unwrap();
 

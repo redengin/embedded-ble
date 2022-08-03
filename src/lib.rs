@@ -8,7 +8,7 @@ pub mod nrf5x;
 #[cfg(feature="nrf5x")]
 use nrf5x::{Nrf5xHci as HCI};
 
-use crate::link_layer::{AdvPdu, ChSel, AdvA};
+use crate::link_layer::{AdvPdu};
 
 #[allow(unused)]
 const ADV_PDU_SIZE_MAX:usize = 1 + 1 + 6 + 31; // header + length + AdvA + AdvData
@@ -40,13 +40,12 @@ impl<'a> Ble<'a> {
         assert!([Channel::CH37, Channel::CH38, Channel::CH39].contains(&channel));
 
         let mut buffer:[u8;ADV_PDU_SIZE_MAX] = [0;ADV_PDU_SIZE_MAX];
-        let adv_a = AdvA::Public([0;6]);
-        let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &adv_a, &self.ad_fields)
+        let pdu = AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields)
             .to_buffer(&mut buffer);
         self.hci.send(
             channel,
-            gap::AD_ACCESS_ADDRESS,
-            gap::AD_CRCINIT,
+            link_layer::ADV_ACCESS_ADDRESS,
+            link_layer::ADV_CRCINIT,
             pdu
         );
     }

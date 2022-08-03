@@ -1,5 +1,11 @@
 use crate::{gap::AdFields};
 
+type AccessAddress = u32;
+/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.455603
+pub const ADV_ACCESS_ADDRESS:AccessAddress = 0x8E89BED6_u32.to_le();
+/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.453964
+pub const ADV_CRCINIT:u32 = 0x555555;
+
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.455772
 #[derive(Copy, Clone, PartialEq)]
@@ -42,17 +48,17 @@ pub enum ADV_PDU_TYPE {
     AUX_CONNECT_RSP = 0b1000,
 }
 
-type AdvAddress = [u8;6];
+pub(crate) type Address = [u8;6];
 pub enum TxRxAdvAddress {
-    Public(AdvAddress),
-    RandomStatic(AdvAddress),
-    PrivateStatic(AdvAddress),
+    Public(Address),
+    RandomStatic(Address),
+    PrivateStatic(Address),
 }
 
 pub type AdvA = TxRxAdvAddress;
 pub type TargetA = TxRxAdvAddress;
 pub type InitA = TxRxAdvAddress;
-pub type ScanA = AdvAddress;
+pub type ScanA = Address;
 
 pub enum ChSel {
     Supported,
@@ -154,8 +160,8 @@ impl<'a> AdvPdu<'a> {
         // let advData = self[3].write(&mut buffer[pdu_size..]);
         pdu_size += adv_data.len();
 
-        // set the length field
-        buffer[1] = pdu_size as u8;
+        // set the length field (size - two bytes header)
+        buffer[1] = (pdu_size - 2) as u8;
         return &buffer[..pdu_size];
     }
 }

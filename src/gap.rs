@@ -1,8 +1,3 @@
-/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.455603
-pub const AD_ACCESS_ADDRESS:u32 = 0x8E89BED6;
-/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.453964
-pub const AD_CRCINIT:u32 = 0x555555;
-
 const PDU_ADV_STRUCTURE_LENGTH_SIZE:usize = 1;
 
 #[derive(Default)]

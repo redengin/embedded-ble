@@ -1,17 +1,22 @@
-use crate::{PDU_SIZE_MAX, link_layer};
-use nrf52832_pac::{RADIO, FICR, radio::txpower::TXPOWER_A};
+use nrf52832_pac::{self as pac};
+
+use crate::{link_layer};
+use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
+// use pac::{RADIO, radio::txpower::TXPOWER_A};
+use pac::{RADIO};
 use core::ptr::{write_volatile, read_volatile};
 use core::sync::atomic::{compiler_fence, Ordering};
 use rtt_target::{rprintln};
 
 pub struct Nrf5xHci {
-    radio: RADIO
+    radio: RADIO,
+    pub(crate) adv_a: link_layer::AdvA, // hw address
 }
 
 
 pub enum RadioMode { Ble1Mbit, Ble2Mbit }
 impl Nrf5xHci {
-    pub fn new(radio:RADIO, mode:RadioMode, _ficr:FICR) -> Self {
+    pub fn new(radio:RADIO, mode:RadioMode, ficr:FICR) -> Self {
         // NOTE: the unsafe blocks are required per the PAC
         //      as they perform direct register access, their is no real concern.
         match mode {
@@ -35,42 +40,71 @@ impl Nrf5xHci {
             }
         }
         radio.pcnf1.write(|w| unsafe{ w
-            .maxlen().bits(PDU_SIZE_MAX as u8)
+            .maxlen().bits(255)
+            .statlen().bits(0)
+            .balen().bits(3)    // four (prefix:1 + base:3) byte address per BLE spec
             .endian().little()
-            .balen().bits(3)
             .whiteen().enabled()
         });
 
         // enables fast ramp-up
         radio.modecnf0.write(|w| w.ru().set_bit());
 
+        // this driver only uses first address entry(0)
         radio.txaddress.write(|w| unsafe{ w.bits(0) });
-        radio.rxaddresses.write(|w| w.addr0().enabled());
+        radio.rxaddresses.write(|w| w
+            .addr0().enabled()
+            .addr1().disabled()
+            .addr2().disabled()
+            .addr3().disabled()
+            .addr4().disabled()
+            .addr5().disabled()
+            .addr6().disabled()
+            .addr7().disabled()
+        );
 
-        // configure for CRC24
-        radio.crccnf.write(|w| w.skipaddr().skip().len().three());
+        // configure for CRC24 per BLE spec
+        radio.crccnf.write(|w| w
+            .skipaddr().skip()  // skip address (only CRC the PDU)
+            .len().three());    // CRC32 (3 bytes)
         radio.crcpoly.write(|w| unsafe{ w.crcpoly().bits(0x0000065B) });
 
-        // configure interframe spacing
+        // configure interframe spacing per BLE spec
         radio.tifs.write(|w| unsafe{ w.tifs().bits(150) });
 
-        // set transmit power
+        // set transmit power (max)
         radio.txpower.write(|w| w.txpower().pos4d_bm());
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
         
-        Self{radio}
+        Self{
+            radio,
+            adv_a : Self::get_address(ficr),
+        }
     }
 
-    fn set_channel(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32) {
+    fn get_address(ficr:FICR) -> link_layer::AdvA {
+        let mut address:link_layer::Address = [0; 6];
+        address[..4].copy_from_slice( &ficr.deviceaddr[0].read().bits().to_le_bytes());
+        address[4..].copy_from_slice( &(ficr.deviceaddr[1].read().bits() as u16).to_le_bytes());
+
+        return match ficr.deviceaddrtype.read().deviceaddrtype().variant() {
+            DEVICEADDRTYPE_A::PUBLIC => link_layer::AdvA::Public(address),
+            DEVICEADDRTYPE_A::RANDOM => link_layer::AdvA::RandomStatic(address),
+        }
+    }
+
+    fn set_channel(&self, channel:link_layer::Channel, access_address:u32) {
+        // set channel
+        self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
+        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(0b01000000 | channel as u8)});
+
         // set the access address
+        // set top three bytes of base0 per balen(3)
         self.radio.base0.write(|w| unsafe{ w.base0().bits(access_address << 8) });
         self.radio.prefix0.write(|w| unsafe{ w
             .ap0().bits((access_address >> 24) as u8)
-            .ap1().bits(0xFF)
-            .ap2().bits(0xFF)
-            .ap3().bits(0xFF)
         });
 
         // apply errata https://infocenter.nordicsemi.com/pdf/nRF52832_Rev_2_Errata_v1.7.pdf#%5B%7B%22num%22%3A318%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C85.039%2C296.523%2Cnull%5D
@@ -85,16 +119,11 @@ impl Nrf5xHci {
             write_volatile(UNDOCUMENTED, 
                 (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
         }
-
-        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
-
-        self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
-        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(0b01000000 | channel as u8)});
     }
 
-    fn set_txpower(&self, power:TXPOWER_A) {
-        self.radio.txpower.write(|w| w.txpower().variant(power))
-    }
+    // fn set_txpower(&self, power:TXPOWER_A) {
+    //     self.radio.txpower.write(|w| w.txpower().variant(power))
+    // }
 
     /// starts receive for a single packet
     /// upon a packet, the RADIO interrupt will fire (and the RADIO will be disabled)
@@ -137,15 +166,17 @@ impl Nrf5xHci {
         // assert()
 
         // TODO determine if access_address and/or crcinit are relevant for listen
-        self.set_channel(channel, access_address, crcinit);
+        self.set_channel(channel, access_address);
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
+        // pdu[0] = 66;
         rprintln!("{:?}", pdu);
         self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
         // let buf:[u8;39] = [66, 28, 201, 2, 116, 131, 170, 8, 21, 9, 88, 117, 115, 116, 121, 32, 66, 101, 97, 99, 111, 110, 32, 40, 110, 82, 70, 53, 50, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         // self.radio.packetptr.write(|w| unsafe{ w.bits(buf.as_ptr() as u32) });
+        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
