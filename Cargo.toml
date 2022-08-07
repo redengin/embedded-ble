@@ -11,16 +11,17 @@ edition = "2018"
 version = "0.0.1"
 
 [features]
-nrf51 = ["dep:nrf51-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52805 = ["dep:nrf52805-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52810 = ["dep:nrf52810-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52811 = ["dep:nrf52811-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52832 = ["dep:nrf52832-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52833 = ["dep:nrf52833-pac", "nrf5x", "nrf5x-xxAB-package"]
-nrf52840 = ["dep:nrf52840-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf51 =     ["nrf5x", "dep:nrf51-pac"]
+nrf52805 =  ["nrf5x", "dep:nrf52805-pac"]
+nrf52810 =  ["nrf5x", "dep:nrf52810-pac"]
+nrf52811 =  ["nrf5x", "dep:nrf52811-pac"]
+nrf52832 =  ["nrf5x", "dep:nrf52832-pac"]
+nrf52833 =  ["nrf5x", "dep:nrf52833-pac"]
+nrf52840 =  ["nrf5x", "dep:nrf52840-pac"]
 nrf5x = []
-nrf5x-xxAA-package = []   # extra info for nrf pac
-nrf5x-xxAB-package = []   # extra info for nrf pac
+nrf5x-xxAA-package = []   # build.rs determines memory
+nrf5x-xxAB-package = []   # build.rs determines memory
+default = ["nrf5x-xxAB-package"]
 
 [dependencies]
 rtt-target = { version="0.3", features=["cortex-m"]}
