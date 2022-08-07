@@ -144,7 +144,7 @@ impl Nrf5xHci {
         // kick off the transmission
         self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
 
-        // await send completion
+        // await send completion (required as the radio is holding onto the buffer data)
         while ! self.radio.state.read().state().is_disabled() {}
 
         return true

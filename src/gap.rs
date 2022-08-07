@@ -6,7 +6,7 @@ const PDU_ADV_STRUCTURE_LENGTH_SIZE:usize = 1;
 pub struct AdFields<'a> {
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999520
     // TODO Service UUID
-    pub _service_uuid:u8,
+    pub _service_uuid: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1004814
     pub local_name: Option<&'a str>,
@@ -23,27 +23,27 @@ pub struct AdFields<'a> {
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999709
     // TODO SECURE SIMPLE PAIRING OUT OF BAND
-    pub _secure_simple_pairing_oob:u8,
+    pub _secure_simple_pairing_oob: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999768
     // TODO SECURITY MANAGER OUT OF BAND
-    pub _security_manager_oob:u8,
+    pub _security_manager_oob: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999818
     // TODO SECURITY MANAGER TK VALUE
-    pub _security_manager_tk_value:u8,
+    pub _security_manager_tk_value: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999838
     // TODO PERIPHERAL CONNECTION INTERVAL RANGE
-    pub _peripheral_connection_interval_range:u8,
+    pub _peripheral_connection_interval_range: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999871
     // TODO SERVICE SOLICITATION
-    pub _service_solicitation:u8,
+    pub _service_solicitation: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999894
     // TODO SERVICE DATA
-    pub _service_data:u8,
+    pub _service_data: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999913
     /// https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
@@ -51,7 +51,7 @@ pub struct AdFields<'a> {
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999932
     // TODO PUBLIC TARGET ADDRESS
-    pub _public_target_address:u8,
+    pub _public_target_address: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999953
     // TODO RANDOM TARGET ADDRESS
@@ -72,24 +72,24 @@ pub struct AdFields<'a> {
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1054608
     // TODO LE SUPPORTED FEATURES
-    pub _le_supported_features:u8,
+    pub _le_supported_features: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1055008
     // TODO CHANNEL MAP UPDATE INDICATION
-    pub _channel_map_update_indication:u8,
+    pub _channel_map_update_indication: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1176955
     // TODO BIGINFO
-    pub _biginfo:u8,
+    pub _biginfo: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1177011
     // TODO BROADCAST_CODE
-    pub _broadcast_code:u8,
+    pub _broadcast_code: u8,
 }
 
 impl<'a> AdFields<'a> {
     /// places ad structures as long as they will fit in packet
-    pub fn write(&'a self, buffer:&'a mut [u8]) -> &[u8]
+    pub fn write(&'a self, buffer: &'a mut [u8]) -> &[u8]
     {
         let mut pdu_size = 0;
 

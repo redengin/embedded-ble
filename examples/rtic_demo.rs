@@ -21,11 +21,12 @@ use nrf52840_hal::{pac, Clocks, clocks};
 
 #[app(device=crate::pac, dispatchers=[SWI0_EGU0, SWI1_EGU1])]
 mod app {
+    // provide debugging support
     use rtt_target::{rtt_init_print, rprintln};
-#[cfg(feature="nrf5x")]
+    // provide scaling of time
     use fugit::ExtU64;
 
-    // provide monotonic scheduling for NRF5x hardware
+// provide monotonic scheduling using RTC for NRF5x hardware
 #[cfg(feature="nrf5x")]
     use crate::nrf5x_monotonic::MonotonicRtc;
 #[cfg(feature="nrf5x")]
@@ -33,11 +34,11 @@ mod app {
 #[cfg(feature="nrf5x")]
     type Tonic = MonotonicRtc<crate::pac::RTC0>;
 
-    // BLE stuff
-    //--------------------------------------------------------------------------------
     use embedded_ble::{Ble, link_layer, gap::AdFields};
+
+// choose the hardware controller
 #[cfg(feature="nrf5x")]
-    use embedded_ble::nrf5x::{Nrf5xHci, RadioMode};
+    use embedded_ble::nrf5x as HCI;
 
     #[shared]
     struct Shared {
@@ -53,19 +54,22 @@ mod app {
         rtt_init_print!();
         rprintln!("init");
 
+// configure NRF5X clocks (RTC for monotonic, hfosc for BLE)
 #[cfg(feature="nrf5x")]
-        // configure NRF5X clocks (RTC for monotonic, hfosc for BLE)
-        crate::nrf5x_configure_clocks(cx.device.CLOCK);
+        crate::nrf5x_monotonic::init_clocks(cx.device.CLOCK);
 
-        // BLE stuff
-        //--------------------------------------------------------------------------------
+// initialize HCI
 #[cfg(feature="nrf5x")]
-        let hci = Nrf5xHci::new(cx.device.RADIO, RadioMode::Ble1Mbit, cx.device.FICR);
+        let hci = HCI::Nrf5xHci::new(cx.device.RADIO, HCI::RadioMode::Ble1Mbit, cx.device.FICR);
+
+        // create the BLE instance
         let info = AdFields { local_name: Some("EmbeddedBle Demo"), ..AdFields::default() };
-
         let ble = Ble::new(hci, info);
+
+        // upon rtic start, begin advertising
         ble_advertiser::spawn().unwrap();
 
+        // return rtic values
         (Shared {
             ble,
          },
@@ -78,18 +82,16 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {
             // go into deep sleep
-            rprintln!("sleeping...");
             cortex_m::asm::wfe();
         }
     }
 
     // schedule for **minimal** priority
     #[task(shared=[ble], priority=1)]
-    fn ble_advertiser(mut cx:ble_advertiser::Context) {
+    fn ble_advertiser(mut cx: ble_advertiser::Context) {
         cx.shared.ble.lock(|ble| {
             // only advertise if we're not connected
-            if ble.connections() == 0 {
-                rprintln!("advertising...");
+            if ! ble.is_connected() {
                 // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
                 let pdu_type = link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND;
@@ -98,7 +100,7 @@ mod app {
                 );
             }
         });
-        rprintln!("advertising done");
+        // continue advertisement forever
         ble_advertiser::spawn_after(1.secs()).unwrap();
     }
 
@@ -126,17 +128,15 @@ mod app {
 }
 
 #[cfg(feature="nrf5x")]
-fn nrf5x_configure_clocks(clock:crate::pac::CLOCK) {
-    // configure RTC source clock (LFCLK) for NRF5x hardware
-    if cfg!(feature="nrf5x") {
+mod nrf5x_monotonic {
+    pub(crate) fn init_clocks(clock: crate::pac::CLOCK) {
+        // configure RTC source clock (LFCLK) for NRF5x hardware
         crate::Clocks::new(clock)
             .enable_ext_hfosc() // required for bluetooth radio
             .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
             .start_lfclk();
     }
-}
-#[cfg(feature="nrf5x")]
-mod nrf5x_monotonic {
+
     //------------------------------------------------------------------------------
     // RTIC Monotonic impl for the RTCs (https://github.com/eflukx/rtic-rtc-example)
     use crate::pac::{rtc0, RTC0, RTC1, RTC2};

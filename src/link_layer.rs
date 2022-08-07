@@ -84,7 +84,7 @@ pub enum AdvPdu<'a> {
 }
 
 impl<'a> AdvPdu<'a> {
-    pub(crate) fn to_buffer(&self, buffer:&'a mut [u8]) -> &'a [u8]
+    pub(crate) fn to_buffer(&self, buffer: &'a mut [u8]) -> &'a [u8]
     {
         let mut pdu_size = 0;
 
