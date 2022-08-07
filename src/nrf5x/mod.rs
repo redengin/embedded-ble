@@ -4,6 +4,7 @@ use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
 // use pac::{RADIO, radio::txpower::TXPOWER_A};
 use pac::{RADIO};
+use core::convert::TryInto;
 use core::ptr::{write_volatile, read_volatile};
 use core::sync::atomic::{compiler_fence, Ordering};
 use rtt_target::{rprintln};
@@ -16,7 +17,10 @@ pub struct Nrf5xHci {
 
 pub enum RadioMode { Ble1Mbit, Ble2Mbit }
 impl Nrf5xHci {
-    pub fn new(radio:RADIO, mode:RadioMode, ficr:FICR) -> Self {
+    pub fn new(radio:RADIO, mode:RadioMode, ficr:FICR) -> Self
+    {
+        // TODO for nrf51 us FICR to tune radio parameters
+
         // NOTE: the unsafe blocks are required per the PAC
         //      as they perform direct register access, their is no real concern.
         match mode {
@@ -40,7 +44,7 @@ impl Nrf5xHci {
             }
         }
         radio.pcnf1.write(|w| unsafe{ w
-            .maxlen().bits(255)
+            .maxlen().bits(link_layer::PDU_SIZE_MAX as u8)
             .statlen().bits(0)
             .balen().bits(3)    // (prefix:1 + base:3) address per BLE spec
             .endian().little()
@@ -50,30 +54,17 @@ impl Nrf5xHci {
         // enables fast ramp-up
         radio.modecnf0.write(|w| w.ru().set_bit());
 
-        // this driver only uses first address entry(0)
+        // this driver only transmits using first address entry(0)
         radio.txaddress.write(|w| unsafe{ w.bits(0) });
-        radio.rxaddresses.write(|w| w
-            .addr0().enabled()
-            .addr1().disabled()
-            .addr2().disabled()
-            .addr3().disabled()
-            .addr4().disabled()
-            .addr5().disabled()
-            .addr6().disabled()
-            .addr7().disabled()
-        );
 
         // configure for CRC24 per BLE spec
         radio.crccnf.write(|w| w
             .skipaddr().skip()  // skip address (only CRC the PDU)
             .len().three());    // CRC32 (3 bytes)
-        radio.crcpoly.write(|w| unsafe{ w.crcpoly().bits(0x0000065B) });
+        radio.crcpoly.write(|w| unsafe{ w.crcpoly().bits(link_layer::BLE_CRC_POLYNOMIAL) });
 
         // configure interframe spacing per BLE spec
-        radio.tifs.write(|w| unsafe{ w.tifs().bits(150) });
-
-        // set transmit power (max)
-        radio.txpower.write(|w| w.txpower().pos4d_bm());
+        radio.tifs.write(|w| unsafe{ w.tifs().bits(link_layer::T_IFS_US) });
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
@@ -100,18 +91,17 @@ impl Nrf5xHci {
         self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
         self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(channel as u8)});
 
-        // set the access address
+        // set the access address (using entry(0))
         self.radio.prefix0.write(|w| unsafe{ w.ap0().bits((access_address >> 24) as u8) });
         // set top three bytes of base0 per balen(3)
         self.radio.base0.write(|w| unsafe{ w.base0().bits(access_address << 8) });
 
         // apply errata https://infocenter.nordicsemi.com/pdf/nRF52832_Rev_2_Errata_v1.7.pdf#%5B%7B%22num%22%3A318%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C85.039%2C296.523%2Cnull%5D
-        // *(volatile uint32_t *) 0x4000173C |= (1 << 10)
-        // unsafe{ 
-        //     const undocumented:*mut u32 = 0x4000173C as *mut u32;
-        //     write_volatile(undocumented, read_volatile(undocumented) | (1 << 10));
-        // }
-        // using nimble's implementation for errata
+        unsafe{ 
+            const undocumented:*mut u32 = 0x4000173C as *mut u32;
+            write_volatile(undocumented, read_volatile(undocumented) | (1 << 10));
+        }
+        // nimble's implementation for errata
         // unsafe{ 
         //     const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
         //     write_volatile(UNDOCUMENTED, 
@@ -119,62 +109,32 @@ impl Nrf5xHci {
         // }
     }
 
-    // fn set_txpower(&self, power:TXPOWER_A) {
+    // fn set_txpower(&self, power:txpower::TXPOWER_A) {
     //     self.radio.txpower.write(|w| w.txpower().variant(power))
     // }
 
-    /// starts receive for a single packet
-    /// upon a packet, the RADIO interrupt will fire (and the RADIO will be disabled)
-    // pub(crate) fn listen(&self, channel:Channel, buffer: &mut [u8]) -> bool {
-    //     // radio must be in disabled mode to start a new listen
-    //     if ! self.radio.state.read().state().is_disabled() {
-    //         return false;
-    //     }
-
-    //     // TODO determine if access_address and/or crcinit are relevant for listen
-    //     self.set_channel(channel, 0, 0);
-
-    //     // TODO support encryption (CCM)
-    //     // TODO support privacy (AAR)
-
-    //     self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
-
-    //     // allow hardware to handle packet and disable radio upon completion
-    //     self.radio.shorts.write(|w| w
-    //         .ready_start().set_bit()    // start listening
-    //         .end_disable().set_bit()    // disable radio upon a packet
-    //         .address_bcstart().set_bit()
-    //         .address_rssistart().set_bit()
-    //         .disabled_rssistop().set_bit()
-    //     );
-
-    //     // enable RADIO disabled interrupt (as "shorts" are enabled, the radio will be disabled upon a packet)
-    //     self.radio.intenset.write(|w| w.disabled().set());
-
-    //     todo!()
-    // }
-
     /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
-    pub(crate) fn send(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32, pdu: &[u8]) -> bool {
+    pub(crate) fn send(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32, buffer: &[u8]) -> bool
+    {
+        assert!(buffer.len() < link_layer::PDU_SIZE_MAX);
+
+        // abort if the radio is busy
         if ! self.radio.state.read().state().is_disabled() {
             return false;
         }
 
-        // TODO debug: validate pdu buffer
-        // assert()
-
-        // TODO determine if access_address and/or crcinit are relevant for listen
+        // setup the radio
         self.set_channel(channel, access_address);
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
-        rprintln!("{:?}", pdu);
-        self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
-        // self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
-        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(link_layer::ADV_CRCINIT) });
+        // initialize the crc value
+        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
+        // set the buffer
+        self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
 
-        // allow hardware to handle packet and disable radio upon completion
+        // configure radio to automatically disable itself after send
         self.radio.shorts.write(|w| w
             .ready_start().enabled()
             .end_disable().enabled()
@@ -185,8 +145,8 @@ impl Nrf5xHci {
         // kick off the transmission
         self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
 
+        // await send completion
         while ! self.radio.state.read().state().is_disabled() {}
-        // assert!(! self.radio.state.read().state().is_disabled());
 
         return true
     }

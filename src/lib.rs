@@ -1,7 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
 pub mod link_layer;
-use link_layer::{Channel};
 pub mod gap;
 #[cfg(feature="nrf5x")]
 pub mod nrf5x;
@@ -35,18 +34,20 @@ impl<'a> Ble<'a> {
         return 0
     }
 
-    pub fn advertise(&self, _pdu_type:link_layer::ADV_PDU_TYPE, channel:Channel) {
+    pub fn advertise(&self, channel:link_layer::Channel, _pdu_type:link_layer::ADV_PDU_TYPE) -> bool
+    {
         // advertising channels are CH37, CH38, CH39
-        assert!([Channel::CH37, Channel::CH38, Channel::CH39].contains(&channel));
+        debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
+        // TODO support no-init
         let mut buffer:[u8;ADV_PDU_SIZE_MAX] = [0;ADV_PDU_SIZE_MAX];
-        let pdu = AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields)
-            .to_buffer(&mut buffer);
-        self.hci.send(
+        let pdu = AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields);
+
+        return self.hci.send(
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
-            pdu
+            pdu.to_buffer(&mut buffer)
         );
     }
 }

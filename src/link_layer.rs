@@ -1,10 +1,16 @@
 use crate::{gap::AdFields, ADV_PDU_SIZE_MAX};
 
+pub const PDU_SIZE_MAX:usize = 255;
+
 type AccessAddress = u32;
-/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.455603
+/// Core_v5.3.pdf#G41.455603
 pub const ADV_ACCESS_ADDRESS:AccessAddress = 0x8E89BED6_u32.to_le();
-/// https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059#G41.453964
+/// Core_v5.3.pdf#G41.453964
+pub const BLE_CRC_POLYNOMIAL:u32 = 0x65B;
+/// Core_v5.3.pdf#G41.453964
 pub const ADV_CRCINIT:u32 = 0x555555;
+/// Core_v5.3.pdf#G41.699341  (Inter Frame Space 150us)
+pub const T_IFS_US:u8 = 150;
 
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.455772

@@ -35,7 +35,7 @@ mod app {
 
     // BLE stuff
     //--------------------------------------------------------------------------------
-    use embedded_ble::{Ble, gap::AdFields};
+    use embedded_ble::{Ble, link_layer, gap::AdFields};
 #[cfg(feature="nrf5x")]
     use embedded_ble::nrf5x::{Nrf5xHci, RadioMode};
 
@@ -78,8 +78,8 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {
             // go into deep sleep
-            // rprintln!("sleeping...");
-            // cortex_m::asm::wfe();
+            rprintln!("sleeping...");
+            cortex_m::asm::wfe();
         }
     }
 
@@ -90,11 +90,12 @@ mod app {
             // only advertise if we're not connected
             if ble.connections() == 0 {
                 rprintln!("advertising...");
-                ble.advertise(
-                    embedded_ble::link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND,
-                    embedded_ble::link_layer::Channel::CH37
-                );
                 // TODO advertise on CH38 and CH39
+                let channel = link_layer::Channel::CH37;
+                let pdu_type = link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND;
+                assert!(
+                    ble.advertise(channel, pdu_type)
+                );
             }
         });
         rprintln!("advertising done");
