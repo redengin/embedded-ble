@@ -29,8 +29,8 @@ RAM : ORIGIN = 0x20000000, LENGTH = {}
 
 fn memory_sizes() -> Option<(&'static str, &'static str)> {
     match (
-        cfg!(feature = "xxAA-package"),
-        cfg!(feature = "xxAB-package"),
+        cfg!(feature = "nrf5x-xxAA-package"),
+        cfg!(feature = "nrf5x-xxAB-package"),
     ) {
         // Allow users to provide their own memory.x by disabling both features
         (false, false) => None,

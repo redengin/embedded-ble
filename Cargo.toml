@@ -10,7 +10,20 @@ license = "../LICENSE"
 edition = "2018"
 version = "0.0.1"
 
+[features]
+nrf51 = ["dep:nrf51-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52805 = ["dep:nrf52805-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52810 = ["dep:nrf52810-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52811 = ["dep:nrf52811-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52832 = ["dep:nrf52832-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52833 = ["dep:nrf52833-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf52840 = ["dep:nrf52840-pac", "nrf5x", "nrf5x-xxAB-package"]
+nrf5x = []
+nrf5x-xxAA-package = []   # extra info for nrf pac
+nrf5x-xxAB-package = []   # extra info for nrf pac
+
 [dependencies]
+rtt-target = { version="0.3", features=["cortex-m"]}
 # TODO uninit = { version="0.5.0", default-features=false }
 nrf51-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52805-pac = { version="0.11", optional=true, features=["rt"] }
@@ -19,7 +32,6 @@ nrf52811-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52832-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52833-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52840-pac = { version="0.11", optional=true, features=["rt"] }
-rtt-target = { version="0.3", features=["cortex-m"]}
 
 # dependencies for the examples
 [target.'cfg(target_arch="arm")'.dev-dependencies]
@@ -31,19 +43,6 @@ panic-rtt-target = { version="0.1", features=["cortex-m"] }
 rtt-target = { version="0.3", features=["cortex-m"]}
 nrf52832-hal = { version="0.15.1", features=["rt"], default-features=false }
 fugit = "0.3.5"
-
-[features]
-nrf5x = []
-xxAA-package = []   # extra info for nrf pac
-xxAB-package = []   # extra info for nrf pac
-nrf51 = ["dep:nrf51-pac", "nrf5x", "xxAB-package"]
-nrf52805 = ["dep:nrf52805-pac", "nrf5x", "xxAB-package"]
-nrf52810 = ["dep:nrf52810-pac", "nrf5x", "xxAB-package"]
-nrf52811 = ["dep:nrf52811-pac", "nrf5x", "xxAB-package"]
-nrf52832 = ["dep:nrf52832-pac", "nrf5x", "xxAB-package"]
-nrf52833 = ["dep:nrf52833-pac", "nrf5x", "xxAB-package"]
-nrf52840 = ["dep:nrf52840-pac", "nrf5x", "xxAB-package"]
-
 
 [profile.dev]
 opt-level = "s"

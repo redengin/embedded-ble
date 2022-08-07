@@ -19,13 +19,15 @@ embedded-ble-nrf5x = { version="0.0", features=["nrf52832"] }
 ```
 `feature` chooses the hardware interface:
 * Supported hardware 
+    * nrf52832
+<!-- TODO 
     * nrf51
     * nrf52805
     * nrf52810
     * nrf52811
-    * nrf52832
     * nrf52833
     * nrf52840
+-->
 
 API Documentation
 --------------------------------------------------------------------------------
