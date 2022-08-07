@@ -78,8 +78,8 @@ mod app {
     fn idle(_: idle::Context) -> ! {
         loop {
             // go into deep sleep
-            rprintln!("sleeping...");
-            cortex_m::asm::wfe();
+            // rprintln!("sleeping...");
+            // cortex_m::asm::wfe();
         }
     }
 
@@ -91,7 +91,7 @@ mod app {
             if ble.connections() == 0 {
                 rprintln!("advertising...");
                 ble.advertise(
-                    embedded_ble::link_layer::ADV_PDU_TYPE::ADV_IND,
+                    embedded_ble::link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND,
                     embedded_ble::link_layer::Channel::CH37
                 );
                 // TODO advertise on CH38 and CH39
@@ -129,9 +129,9 @@ fn nrf5x_configure_clocks(clock:crate::pac::CLOCK) {
     // configure RTC source clock (LFCLK) for NRF5x hardware
     if cfg!(feature="nrf5x") {
         crate::Clocks::new(clock)
+            .enable_ext_hfosc() // required for bluetooth radio
             .set_lfclk_src_external(crate::clocks::LfOscConfiguration::NoExternalNoBypass)
-            .start_lfclk()
-            .enable_ext_hfosc();
+            .start_lfclk();
     }
 }
 #[cfg(feature="nrf5x")]

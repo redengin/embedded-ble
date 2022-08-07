@@ -93,7 +93,7 @@ impl<'a> AdvPdu<'a> {
                 // chsel bit
                 |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
             },
             AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
                 // base pdu type
@@ -101,15 +101,15 @@ impl<'a> AdvPdu<'a> {
                 // chsel bit
                 |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
                 // rxadd bit
-                |   (match target_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << RXADD_SHIFT)
+                |   (match target_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << RXADD_SHIFT)
             },
             AdvPdu::AdvNonConnInd(adv_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 1, _ => 0} << TXADD_SHIFT)
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
             },
         };
         pdu_size += 1;

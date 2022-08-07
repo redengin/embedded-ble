@@ -27,7 +27,7 @@ impl Nrf5xHci {
                     .lflen().bits(8)
                     .s1len().bits(0)
                     .plen()._8bit()
-            });
+                });
             }
             RadioMode::Ble2Mbit => {
                 radio.mode.write(|w| w.mode().ble_2mbit());
@@ -42,7 +42,7 @@ impl Nrf5xHci {
         radio.pcnf1.write(|w| unsafe{ w
             .maxlen().bits(255)
             .statlen().bits(0)
-            .balen().bits(3)    // four (prefix:1 + base:3) byte address per BLE spec
+            .balen().bits(3)    // (prefix:1 + base:3) address per BLE spec
             .endian().little()
             .whiteen().enabled()
         });
@@ -77,7 +77,7 @@ impl Nrf5xHci {
 
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
-        
+
         Self{
             radio,
             adv_a : Self::get_address(ficr),
@@ -98,14 +98,12 @@ impl Nrf5xHci {
     fn set_channel(&self, channel:link_layer::Channel, access_address:u32) {
         // set channel
         self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
-        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(0b01000000 | channel as u8)});
+        self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(channel as u8)});
 
         // set the access address
+        self.radio.prefix0.write(|w| unsafe{ w.ap0().bits((access_address >> 24) as u8) });
         // set top three bytes of base0 per balen(3)
         self.radio.base0.write(|w| unsafe{ w.base0().bits(access_address << 8) });
-        self.radio.prefix0.write(|w| unsafe{ w
-            .ap0().bits((access_address >> 24) as u8)
-        });
 
         // apply errata https://infocenter.nordicsemi.com/pdf/nRF52832_Rev_2_Errata_v1.7.pdf#%5B%7B%22num%22%3A318%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C85.039%2C296.523%2Cnull%5D
         // *(volatile uint32_t *) 0x4000173C |= (1 << 10)
@@ -173,7 +171,8 @@ impl Nrf5xHci {
 
         rprintln!("{:?}", pdu);
         self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
-        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
+        // self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
+        self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(link_layer::ADV_CRCINIT) });
 
         // allow hardware to handle packet and disable radio upon completion
         self.radio.shorts.write(|w| w
@@ -186,6 +185,7 @@ impl Nrf5xHci {
         // kick off the transmission
         self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
 
+        while ! self.radio.state.read().state().is_disabled() {}
         // assert!(! self.radio.state.read().state().is_disabled());
 
         return true
