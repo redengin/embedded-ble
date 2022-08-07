@@ -39,9 +39,16 @@ Demo
 ================================================================================
 (if you wish to run on other targets, see [configuring demo](#demo_config))
 
+* Beacon
 ```sh
-cargo embed --example rtic_demo --features nrf52832 --target thumbv7em-none-eabihf
+cargo embed --example beacon --features nrf52832 --target thumbv7em-none-eabihf
 ```
+<!-- TODO
+* GATT
+```sh
+cargo embed --example beacon --features nrf52832 --target thumbv7em-none-eabihf
+```
+-->
 
 <a id="demo_config">Configuring Demos For Other Hardware</a>
 --------------------------------------------------------------------------------
