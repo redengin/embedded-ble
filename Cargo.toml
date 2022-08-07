@@ -34,7 +34,7 @@ nrf52833-pac = { version="0.11", optional=true, features=["rt"] }
 nrf52840-pac = { version="0.11", optional=true, features=["rt"] }
 
 # dependencies for the examples
-[target.'cfg(target_arch="arm")'.dev-dependencies]
+[dev-dependencies]
 # modify per your target
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
