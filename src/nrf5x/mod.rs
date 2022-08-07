@@ -4,10 +4,9 @@ use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
 // use pac::{RADIO, radio::txpower::TXPOWER_A};
 use pac::{RADIO};
-use core::convert::TryInto;
 use core::ptr::{write_volatile, read_volatile};
 use core::sync::atomic::{compiler_fence, Ordering};
-use rtt_target::{rprintln};
+// use rtt_target::{rprintln};
 
 pub struct Nrf5xHci {
     radio: RADIO,
@@ -98,15 +97,15 @@ impl Nrf5xHci {
 
         // apply errata https://infocenter.nordicsemi.com/pdf/nRF52832_Rev_2_Errata_v1.7.pdf#%5B%7B%22num%22%3A318%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C85.039%2C296.523%2Cnull%5D
         unsafe{ 
-            const undocumented:*mut u32 = 0x4000173C as *mut u32;
-            write_volatile(undocumented, read_volatile(undocumented) | (1 << 10));
+            const UNDOCUMENTED:*mut u32 = 0x4000173C as *mut u32;
+            write_volatile(UNDOCUMENTED, read_volatile(UNDOCUMENTED) | (1 << 10));
         }
         // nimble's implementation for errata
-        // unsafe{ 
-        //     const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
-        //     write_volatile(UNDOCUMENTED, 
-        //         (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
-        // }
+        unsafe{ 
+            const UNDOCUMENTED:*mut u32 = 0x40001774 as *mut u32;
+            write_volatile(UNDOCUMENTED, 
+            (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
+        }
     }
 
     // fn set_txpower(&self, power:txpower::TXPOWER_A) {

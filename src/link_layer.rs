@@ -1,6 +1,9 @@
-use crate::{gap::AdFields, ADV_PDU_SIZE_MAX};
+use crate::{gap::AdFields};
 
+/// Core_v5.3.pdf#G41.405690
+/// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
+pub const ADV_PDU_SIZE_MAX:usize = 37;
 
 type AccessAddress = u32;
 /// Core_v5.3.pdf#G41.455603
