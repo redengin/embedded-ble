@@ -17,7 +17,6 @@ Usage
 embedded-ble = { version="0.0", features=["nrf52832"] }
 embedded-ble-nrf5x = { version="0.0", features=["nrf52832"] }
 ```
-`feature` chooses the hardware interface:
 * Supported hardware 
     * nrf52832
 <!-- TODO 
@@ -28,6 +27,9 @@ embedded-ble-nrf5x = { version="0.0", features=["nrf52832"] }
     * nrf52833
     * nrf52840
 -->
+* NRF5X features
+    * nrf5x-xxAA-package - 512K flash, 64K ram
+    * nrf5x-xxAB-package [DEFAULT] - 256K flash, 32K ram
 
 API Documentation
 --------------------------------------------------------------------------------
