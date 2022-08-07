@@ -14,12 +14,12 @@ Usage
 `Cargo.toml`
 ```toml
 [dependencies]
-embedded-ble = { version="0.0.1", features=["nrf52832"] }
-embedded-ble-nrf5x = { version="0.0.1", features=["nrf52832"] }
+embedded-ble = { version="0.0", features=["nrf52832"] }
+embedded-ble-nrf5x = { version="0.0", features=["nrf52832"] }
 ```
 `feature` chooses the hardware interface:
 * Supported `feature` options
-    * nrf51 (TODO not currently supported)
+    * nrf51
     * nrf52805
     * nrf52810
     * nrf52811
@@ -61,7 +61,7 @@ directly, so it is necessary to find an open-source implementation to reverse
 engineer into Rust.
 
 The [Apache Mynewt-nimble](https://github.com/apache/mynewt-nimble) project
-provides open-source implementation for [hardware](https://github.com/apache/mynewt-core#overview) - leveraging their host-controller architecture.
+provides open-source implementation for common [hardware](https://github.com/apache/mynewt-core#overview).
 
 
 
