@@ -28,13 +28,11 @@ mod app {
 
 // provide monotonic scheduling using RTC for NRF5x hardware
 #[cfg(feature="nrf5x")]
-    use crate::nrf5x_monotonic::MonotonicRtc;
-#[cfg(feature="nrf5x")]
     #[monotonic(binds=RTC0, default=true)]
 #[cfg(feature="nrf5x")]
-    type Tonic = MonotonicRtc<crate::pac::RTC0>;
+    type Tonic = crate::nrf5x::MonotonicRtc<crate::pac::RTC0>;
 
-    use embedded_ble::{Ble, link_layer, gap::AdFields};
+    use embedded_ble::{Ble, link_layer, gap};
 
 // choose the hardware controller
 #[cfg(feature="nrf5x")]
@@ -56,26 +54,28 @@ mod app {
 
 // configure NRF5X clocks (RTC for monotonic, hfosc for BLE)
 #[cfg(feature="nrf5x")]
-        crate::nrf5x_monotonic::init_clocks(cx.device.CLOCK);
+        crate::nrf5x::init_clocks(cx.device.CLOCK);
 
 // initialize HCI
 #[cfg(feature="nrf5x")]
         let hci = HCI::Nrf5xHci::new(cx.device.RADIO, HCI::RadioMode::Ble1Mbit, cx.device.FICR);
 
         // create the BLE instance
-        let info = AdFields { local_name: Some("EmbeddedBle Demo"), ..AdFields::default() };
+        let info = gap::AdFields {
+            local_name: Some("EmbeddedBle Demo"),
+            flags: Some(gap::Flags::LeLimitedDiscoverable),
+            ..gap::AdFields::default()
+        };
         let ble = Ble::new(hci, info);
 
         // upon rtic start, begin advertising
         ble_advertiser::spawn().unwrap();
 
         // return rtic values
-        (Shared {
-            ble,
-         },
-         Local {
-         },
-         init::Monotonics(MonotonicRtc::new(cx.device.RTC0)))
+        (Shared { ble, },
+         Local { },
+#[cfg(feature="nrf5x")]
+         init::Monotonics(crate::nrf5x::MonotonicRtc::new(cx.device.RTC0)))
     }
 
     #[idle]
@@ -94,7 +94,7 @@ mod app {
             if ! ble.is_connected() {
                 // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
-                let pdu_type = link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND;
+                let pdu_type = link_layer::ADV_PDU_TYPE::ADV_IND;
                 assert!(
                     ble.advertise(channel, pdu_type)
                 );
@@ -127,8 +127,9 @@ mod app {
     // }
 }
 
+/// nrf5x support --------------------------------------------------
 #[cfg(feature="nrf5x")]
-mod nrf5x_monotonic {
+mod nrf5x {
     pub(crate) fn init_clocks(clock: crate::pac::CLOCK) {
         // configure RTC source clock (LFCLK) for NRF5x hardware
         crate::Clocks::new(clock)

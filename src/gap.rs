@@ -13,7 +13,7 @@ pub struct AdFields<'a> {
     pub short_name: Option<&'a str>,
 
     /// see enum Flags (https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589)
-    pub flags: Option<u8>,
+    pub flags: Option<Flags>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999668
     pub manufacturer_specific_data: Option<&'a [u8]>,
@@ -137,7 +137,7 @@ impl<'a> AdFields<'a> {
                 buffer[pdu_size] = DataTypes::Flags as u8;
                 pdu_size += 1;
                 // set ad structure payload
-                buffer[pdu_size] = flags;
+                buffer[pdu_size] = flags as u8;
                 pdu_size += 1;
             }
             None => {}
@@ -292,7 +292,8 @@ pub enum DataTypes {
 
 #[allow(unused)]
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
-enum Flags {
+#[derive(Copy, Clone)]
+pub enum Flags {
     LeLimitedDiscoverable   = 0b00001,
     LeGeneralDiscoverable   = 0b00010,
     LeAndBrEdrCapable       = 0b00100,

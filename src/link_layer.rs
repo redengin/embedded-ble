@@ -49,12 +49,13 @@ pub enum ADV_PDU_TYPE {
     SCAN_REQ        = 0b0011,   // aka AUX_SCAN_REQ
     SCAN_RSP        = 0b0100,
     // Initiating: establishing a connection between a peripheral device and a central device
-    CONNECT_IND     = 0b0101,   // this is the connection request packet sent on one of the Primary advertising channels
+    CONNECT_IND     = 0b0101,   // connection request packet
                                 // aka AUX_CONNECT_REQ
-    // Extending: option to advertise on the Secondary advertising channels in addition to the Primary advertising channels
+    AUX_CONNECT_RSP = 0b1000,   // connection response packet
+    // TODO what is this?
     ADV_SCAN_IND    = 0b0110,   // Scannable Undirected advertising
+    // TODO what is this?
     ADV_EXT_IND     = 0b0111,   // aka AUX_ADV_IND, AUX_SCAN_RSP, AUX_SYNC_IND, AUX_CHAIN_IND
-    AUX_CONNECT_RSP = 0b1000,
 }
 
 pub(crate) type Address = [u8;6];
