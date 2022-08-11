@@ -92,7 +92,6 @@ mod app {
         cx.shared.ble.lock(|ble| {
             // only advertise if we're not connected
             if ! ble.is_connected() {
-                // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
                 let pdu_type = link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND;
                 assert!(

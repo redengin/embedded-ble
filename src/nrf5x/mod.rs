@@ -145,6 +145,7 @@ impl Nrf5xHci {
         self.radio.tasks_txen.write(|w| unsafe{ w.bits(1) });
 
         // await send completion (required as the radio is holding onto the buffer data)
+        // TODO return a Future that holds on to the buffer (to allow work during transmission)
         while ! self.radio.state.read().state().is_disabled() {}
 
         return true
