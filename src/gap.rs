@@ -296,7 +296,6 @@ pub enum DataTypes {
 pub enum Flags {
     LeLimitedDiscoverable   = 0b00001,
     LeGeneralDiscoverable   = 0b00010,
-    LeAndBrEdrCapable       = 0b00100,
 }
 
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
