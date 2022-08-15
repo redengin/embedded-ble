@@ -316,12 +316,14 @@ pub enum LeRole {
 mod adfields_write {
     use super::*;
 
+    const ADV_PDU_SIZE_MAX:usize = 39;
+
     #[test]
     fn local_name() {
         let name = "LOCAL NAME";
         {
             let ad_fields = AdFields{ local_name:Some(name), ..AdFields::default() };
-            let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+            let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
             let adv_data= ad_fields.write(&mut buffer);
             const AD_TYPE_SIZE:usize = 1;
             assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
@@ -331,7 +333,7 @@ mod adfields_write {
         }
         {
             let ad_fields = AdFields{ short_name:Some(name), ..AdFields::default() };
-            let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+            let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
             let adv_data= ad_fields.write(&mut buffer);
             const AD_TYPE_SIZE:usize = 1;
             assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
@@ -342,21 +344,21 @@ mod adfields_write {
     }
     #[test]
     fn flags() {
-        let flags = 0;
+        let flags = Flags::LeGeneralDiscoverable;
         let ad_fields = AdFields{ flags:Some(flags), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::Flags as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-        assert_eq!(flags, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
+        assert_eq!(flags as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
     }
     #[test]
     fn manufacturer_specific_data() {
         let data:[u8;2] = [0; 2];
         let ad_fields = AdFields{ manufacturer_specific_data:Some(&data), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
@@ -368,7 +370,7 @@ mod adfields_write {
     fn tx_power_level() {
         let tx_power_level = 0;
         let ad_fields = AdFields{ tx_power_level:Some(tx_power_level), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
@@ -380,7 +382,7 @@ mod adfields_write {
     fn appearance() {
         let appearance = 0xA5;
         let ad_fields = AdFields{ appearance:Some(appearance), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
@@ -392,7 +394,7 @@ mod adfields_write {
     fn le_bluetooth_device_address() {
         let le_bluetooth_device_address:LeBluetoothDeviceAddress = [0;7];
         let ad_fields = AdFields{ le_bluetooth_device_address:Some(&le_bluetooth_device_address), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + le_bluetooth_device_address.len()), adv_data.len());
@@ -404,7 +406,7 @@ mod adfields_write {
     fn le_role() {
         let le_role = LeRole::OnlyCentralRole;
         let ad_fields = AdFields{ le_role:Some(le_role), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
@@ -416,7 +418,7 @@ mod adfields_write {
     fn uri() {
         let uri = "URI";
         let ad_fields = AdFields{ uri:Some(uri), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), adv_data.len());
@@ -428,7 +430,7 @@ mod adfields_write {
     fn multiple_fields() {
         let name = "concat";
         let ad_fields = AdFields{ local_name:Some(name), uri:Some(name), ..AdFields::default() };
-        let mut buffer:[u8; crate::ADV_PDU_SIZE_MAX] = [0; crate::ADV_PDU_SIZE_MAX];
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
         const AD_TYPE_SIZE:usize = 1;
         assert_eq!(2 * (PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
