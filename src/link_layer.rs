@@ -3,7 +3,7 @@ use crate::{gap::AdFields};
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
-pub const ADV_PDU_SIZE_MAX:usize = 37;
+pub const ADV_PDU_SIZE_MAX:usize = 39;
 
 type AccessAddress = u32;
 /// Core_v5.3.pdf#G41.455603
@@ -70,6 +70,7 @@ pub type TargetA = TxRxAdvAddress;
 pub type InitA = TxRxAdvAddress;
 pub type ScanA = Address;
 
+///Core_v5.3.pdf#G41.783004
 pub enum ChSel {
     Supported,
     Unsupported,
@@ -77,7 +78,7 @@ pub enum ChSel {
 
 pub enum AdvPdu<'a> {
     AdvInd(ChSel, &'a AdvA, &'a AdFields<'a>),
-    AdvDirectInd(ChSel, &'a AdvA, &'a InitA, &'a AdFields<'a>),
+    // AdvDirectInd(ChSel, &'a AdvA, &'a InitA, &'a AdFields<'a>),
     AdvNonConnInd(&'a AdvA, &'a AdFields<'a>),
     // ScanReq(&'a ScanA, &'a AdvA, &'a AdFields<'a>),
     // ScanRsp(&'a AdvA, &'a AdFields<'a>),
@@ -97,6 +98,12 @@ impl<'a> AdvPdu<'a> {
 
         // set the pdu type
         buffer[0] = match self {
+            AdvPdu::AdvNonConnInd(adv_a, ..) => {
+                // base pdu type
+                ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
+                // txadd bit
+                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+            },
             AdvPdu::AdvInd(chsel, adv_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
@@ -105,22 +112,16 @@ impl<'a> AdvPdu<'a> {
                 // txadd bit
                 |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
             },
-            AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
-                // base pdu type
-                ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
-                // chsel bit
-                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
-                // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
-                // rxadd bit
-                |   (match target_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << RXADD_SHIFT)
-            },
-            AdvPdu::AdvNonConnInd(adv_a, ..) => {
-                // base pdu type
-                ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
-                // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
-            },
+            // AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
+            //     // base pdu type
+            //     ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
+            //     // chsel bit
+            //     |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+            //     // txadd bit
+            //     |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+            //     // rxadd bit
+            //     |   (match target_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << RXADD_SHIFT)
+            // },
         };
         pdu_size += 1;
 
@@ -131,6 +132,7 @@ impl<'a> AdvPdu<'a> {
         match self {
             AdvPdu::AdvInd(_, adv_a, ..)
             | AdvPdu::AdvNonConnInd(adv_a, ..) => {
+                // set AdvA
                 match adv_a {
                     TxRxAdvAddress::Public(adv_a) 
                     | TxRxAdvAddress::RandomStatic(adv_a) 
@@ -140,30 +142,30 @@ impl<'a> AdvPdu<'a> {
                     },
                 }
             },
-            AdvPdu::AdvDirectInd(_, adv_a, target_a, ..) => {
-                match adv_a {
-                    TxRxAdvAddress::Public(adv_a) 
-                    | TxRxAdvAddress::RandomStatic(adv_a) 
-                    | TxRxAdvAddress::PrivateStatic(adv_a) => {
-                        buffer[pdu_size..(pdu_size+adv_a.len())].copy_from_slice(adv_a);
-                        pdu_size += adv_a.len();
-                    },
-                }
-                match target_a {
-                    TxRxAdvAddress::Public(target_a) 
-                    | TxRxAdvAddress::RandomStatic(target_a) 
-                    | TxRxAdvAddress::PrivateStatic(target_a) => {
-                        buffer[pdu_size..(pdu_size+target_a.len())].copy_from_slice(target_a);
-                        pdu_size += target_a.len();
-                    },
-                }
-            },
+            // AdvPdu::AdvDirectInd(_, adv_a, target_a, ..) => {
+            //     match adv_a {
+            //         TxRxAdvAddress::Public(adv_a) 
+            //         | TxRxAdvAddress::RandomStatic(adv_a) 
+            //         | TxRxAdvAddress::PrivateStatic(adv_a) => {
+            //             buffer[pdu_size..(pdu_size+adv_a.len())].copy_from_slice(adv_a);
+            //             pdu_size += adv_a.len();
+            //         },
+            //     }
+            //     match target_a {
+            //         TxRxAdvAddress::Public(target_a) 
+            //         | TxRxAdvAddress::RandomStatic(target_a) 
+            //         | TxRxAdvAddress::PrivateStatic(target_a) => {
+            //             buffer[pdu_size..(pdu_size+target_a.len())].copy_from_slice(target_a);
+            //             pdu_size += target_a.len();
+            //         },
+            //     }
+            // },
         }
 
-        // add the gap elements
+        // add the gap elements (AdvData)
         let adv_data= match self {
             AdvPdu::AdvInd(_, _, ad_fields)
-            | AdvPdu::AdvDirectInd(_, _, _, ad_fields)
+            // | AdvPdu::AdvDirectInd(_, _, _, ad_fields)
             | AdvPdu::AdvNonConnInd(_, ad_fields) => {
                 ad_fields.write(&mut buffer[pdu_size..])
             }
@@ -172,8 +174,9 @@ impl<'a> AdvPdu<'a> {
 
         // TODO assert pdu_size per BLE spec
 
-        // set the length field (size - two bytes header)
-        buffer[1] = (pdu_size - 2) as u8;
+        // set the length field
+        const PDU_HEADER_SIZE:usize = 3;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
         return &buffer[..pdu_size];
     }
 }

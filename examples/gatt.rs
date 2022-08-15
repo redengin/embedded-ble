@@ -62,7 +62,7 @@ mod app {
 
         // create the BLE instance
         let info = gap::AdFields {
-            local_name: Some("EmbeddedBle Demo"),
+            local_name: Some("GATT Demo"),
             flags: Some(gap::Flags::LeGeneralDiscoverable),
             ..gap::AdFields::default()
         };

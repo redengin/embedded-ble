@@ -2,11 +2,10 @@ use nrf52832_pac::{self as pac};
 
 use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
-// use pac::{RADIO, radio::txpower::TXPOWER_A};
 use pac::{RADIO};
 use core::ptr::{write_volatile, read_volatile};
 use core::sync::atomic::{compiler_fence, Ordering};
-// use rtt_target::{rprintln};
+use rtt_target::{rprintln};
 
 pub struct Nrf5xHci {
     radio: RADIO,
@@ -68,6 +67,9 @@ impl Nrf5xHci {
         // TODO support encryption (CCM)
         // TODO support privacy (AAR)
 
+        // configure for maximum power
+        radio.txpower.write(|w| w.txpower().pos4d_bm());
+
         Self{
             radio,
             adv_a : Self::get_address(ficr),
@@ -107,15 +109,29 @@ impl Nrf5xHci {
             (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
         }
     }
-
-    // fn set_txpower(&self, power:txpower::TXPOWER_A) {
-    //     self.radio.txpower.write(|w| w.txpower().variant(power))
-    // }
+    /// set the transmit power
+    /// Core_v5.3.pdf#G37.564979
+    pub fn set_txpower(&self, db: i8) {
+        self.radio.txpower.write(|w| w.txpower().variant(
+            match db {
+                i8::MIN..=-19 => pac::radio::txpower::TXPOWER_A::NEG40DBM,
+                -20..=-15 => pac::radio::txpower::TXPOWER_A::NEG20DBM,
+                -16..=-11 => pac::radio::txpower::TXPOWER_A::NEG16DBM,
+                -12..=-7 => pac::radio::txpower::TXPOWER_A::NEG12DBM,
+                -8..=-3 => pac::radio::txpower::TXPOWER_A::NEG8DBM,
+                -4..=2 => pac::radio::txpower::TXPOWER_A::NEG4DBM,
+                3 => pac::radio::txpower::TXPOWER_A::POS3DBM,
+                4.. => pac::radio::txpower::TXPOWER_A::POS4DBM,
+            }
+        ));
+    }
 
     /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
     pub(crate) fn send(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32, buffer: &[u8]) -> bool
     {
         assert!(buffer.len() < link_layer::PDU_SIZE_MAX);
+
+        rprintln!("Sending (hex) {:0X?}", buffer);
 
         // abort if the radio is busy
         if ! self.radio.state.read().state().is_disabled() {
