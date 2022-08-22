@@ -131,7 +131,7 @@ impl Nrf5xHci {
     {
         assert!(buffer.len() < link_layer::PDU_SIZE_MAX);
 
-        rprintln!("Sending (hex) {:0X?}", buffer);
+        rprintln!("Sending (hex) {:02X?}", buffer);
 
         // abort if the radio is busy
         if ! self.radio.state.read().state().is_disabled() {
