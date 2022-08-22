@@ -11,28 +11,29 @@ edition = "2018"
 version = "0.0.1"
 
 [features]
-nrf51 =     ["nrf5x", "dep:nrf51-pac"]
-nrf52805 =  ["nrf5x", "dep:nrf52805-pac"]
-nrf52810 =  ["nrf5x", "dep:nrf52810-pac"]
-nrf52811 =  ["nrf5x", "dep:nrf52811-pac"]
-nrf52832 =  ["nrf5x", "dep:nrf52832-pac"]
-nrf52833 =  ["nrf5x", "dep:nrf52833-pac"]
-nrf52840 =  ["nrf5x", "dep:nrf52840-pac"]
+nrf51 =     ["nrf5x", "dep:nrf51-hal"]
+# nrf52805 =  ["nrf5x", "dep:nrf52805-hal"]
+nrf52810 =  ["nrf5x", "dep:nrf52810-hal"]
+nrf52811 =  ["nrf5x", "dep:nrf52811-hal"]
+nrf52832 =  ["nrf5x", "dep:nrf52832-hal"]
+nrf52833 =  ["nrf5x", "dep:nrf52833-hal"]
+nrf52840 =  ["nrf5x", "dep:nrf52840-hal"]
 nrf5x = []
-nrf5x-xxAA-package = []   # build.rs determines memory
-nrf5x-xxAB-package = []   # build.rs determines memory
+nrf5x-xxAA-package = []   # nrf5x small, build.rs determines memory
+nrf5x-xxAB-package = []   # nrf5xx large, build.rs determines memory
 default = ["nrf5x-xxAB-package"]
 
 [dependencies]
-rtt-target = { version="0.3", features=["cortex-m"]}
 # TODO uninit = { version="0.5.0", default-features=false }
-nrf51-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52805-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52810-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52811-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52832-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52833-pac = { version="0.11", optional=true, features=["rt"] }
-nrf52840-pac = { version="0.11", optional=true, features=["rt"] }
+nrf51-hal = { version="0.15", optional=true, features=["rt"] }
+# nrf52805-hal = { version="0.15", optional=true, features=["rt"] }
+nrf52810-hal = { version="0.15", optional=true, features=["rt"] }
+nrf52811-hal = { version="0.15", optional=true, features=["rt"] }
+nrf52832-hal = { version="0.15", optional=true, features=["rt"] }
+nrf52833-hal = { version="0.15", optional=true, features=["rt"] }
+nrf52840-hal = { version="0.15", optional=true, features=["rt"] }
+# FIXME used for debugging
+rtt-target = { version="0.3", features=["cortex-m"] }
 
 # dependencies for the examples
 [dev-dependencies]
@@ -41,8 +42,7 @@ cortex-m = "0.7"
 cortex-m-rt = "0.7"
 cortex-m-rtic = "1.0"
 panic-rtt-target = { version="0.1", features=["cortex-m"] }
-rtt-target = { version="0.3", features=["cortex-m"]}
-nrf52832-hal = { version="0.15.1", features=["rt"], default-features=false }
+rtt-target = { version="0.3", features=["cortex-m"] }
 fugit = "0.3.5"
 
 [profile.dev]
