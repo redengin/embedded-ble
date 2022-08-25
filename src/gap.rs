@@ -5,15 +5,19 @@ const PDU_ADV_STRUCTURE_LENGTH_SIZE:usize = 1;
 /// https://www.novelbits.io/bluetooth-low-energy-advertisements-part-1/
 pub struct AdFields<'a> {
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999520
-    // TODO Service UUID
-    pub _service_uuid: u8,
+    pub incomplete_list_service_uuid_16: Option<&'a [u16]>,
+    pub complete_list_service_uuid_16: Option<&'a [u16]>,
+    pub incomplete_list_service_uuid_32: Option<&'a [u32]>,
+    pub complete_list_service_uuid_32: Option<&'a [u32]>,
+    pub incomplete_list_service_uuid_128: Option<&'a [u128]>,
+    pub complete_list_service_uuid_128: Option<&'a [u128]>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1004814
     pub local_name: Option<&'a str>,
     pub short_name: Option<&'a str>,
 
     /// see enum Flags (https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589)
-    pub flags: Option<Flags>,
+    pub flags: Option<u8>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999668
     pub manufacturer_specific_data: Option<&'a [u8]>,
@@ -96,6 +100,109 @@ impl<'a> AdFields<'a> {
         // specification allows this to be larger than one-byte, but only
         //      single byte types are currently defined
         const AD_TYPE_SIZE:usize = 1;
+
+        // add incomplete service uuid 16 list
+        match self.incomplete_list_service_uuid_16 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Incomplete16bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 2)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 2;
+                }
+            }
+            None => {}
+        }
+        // add complete service uuid 16 list
+        match self.complete_list_service_uuid_16 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Complete16bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 2)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 2;
+                }
+            }
+            None => {}
+        }
+        // add incomplete service uuid 32 list
+        match self.incomplete_list_service_uuid_32 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Incomplete32bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 4)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 4;
+                }
+            }
+            None => {}
+        }
+        // add complete service uuid 32 list
+        match self.complete_list_service_uuid_32 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Complete32bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 4)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 4;
+                }
+            }
+            None => {}
+        }
+        // add incomplete service uuid 128 list
+        match self.incomplete_list_service_uuid_128 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Incomplete128bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 16)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 16;
+                }
+            }
+            None => {}
+        }
+        // add complete service uuid 128 list
+        match self.complete_list_service_uuid_128 {
+            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
+                // set ad structure length
+                buffer[pdu_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
+                pdu_size += 1;
+                // set ad structure type
+                buffer[pdu_size] = DataTypes::Complete128bitServiceUuids as u8;
+                pdu_size += 1;
+                // set ad structure payload
+                for uuid in uuids {
+                    buffer[pdu_size..(pdu_size + 16)].copy_from_slice(&uuid.to_le_bytes());
+                    pdu_size += 16;
+                }
+            }
+            None => {}
+        }
 
         // add local_name
         match self.local_name {
@@ -290,13 +397,11 @@ pub enum DataTypes {
     ManufacturerSpecificData        = 0xFF,
 }
 
-#[allow(unused)]
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
-#[derive(Copy, Clone)]
-pub enum Flags {
-    LeLimitedDiscoverable   = 0b00001,
-    LeGeneralDiscoverable   = 0b00010,
-}
+pub const FLAGS_LE_LIMITED_DISCOVERABLE:u8      = 1 << 0;
+pub const FLAGS_LE_GENERAL_DISCOVERABLE:u8      = 1 << 1;
+pub const FLAGS_BR_EDR_NOT_SUPPORTED:u8         = 1 << 2;
+pub const FLAGS_SIMULTANEOUS_LE_AND_BR_EDR:u8   = 1 << 3;
 
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
 type LeBluetoothDeviceAddress = [u8;7];
@@ -317,38 +422,102 @@ mod adfields_write {
     use super::*;
 
     const ADV_PDU_SIZE_MAX:usize = 39;
+    const AD_TYPE_SIZE:usize = 1; // BLE specification is ambiguous, but current standard only supports this
 
     #[test]
-    fn local_name() {
+    fn incomplete_list_service_uuid_16() {
+        let service_uuids:[u16;1] = [0xA55A];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Incomplete16bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn complete_list_service_uuid_16() {
+        let service_uuids:[u16;1] = [0xA55A];
+        let ad_fields = AdFields{ complete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Complete16bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn incomplete_list_service_uuid_32() {
+        let service_uuids:[u32;1] = [0xA55A5AA5];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Incomplete32bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn complete_list_service_uuid_32() {
+        let service_uuids:[u32;1] = [0xA55A5AA5];
+        let ad_fields = AdFields{ complete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Complete32bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn incomplete_list_service_uuid_128() {
+        let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Incomplete128bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn complete_list_service_uuid_128() {
+        let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
+        let ad_fields = AdFields{ complete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::Complete128bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn local_complete_name() {
         let name = "LOCAL NAME";
-        {
-            let ad_fields = AdFields{ local_name:Some(name), ..AdFields::default() };
-            let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-            let adv_data= ad_fields.write(&mut buffer);
-            const AD_TYPE_SIZE:usize = 1;
-            assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
-            assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-            assert_eq!(DataTypes::CompleteLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-            assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-        }
-        {
-            let ad_fields = AdFields{ short_name:Some(name), ..AdFields::default() };
-            let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-            let adv_data= ad_fields.write(&mut buffer);
-            const AD_TYPE_SIZE:usize = 1;
-            assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
-            assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-            assert_eq!(DataTypes::ShortenedLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-            assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-        }
+        let ad_fields = AdFields{ local_name:Some(name), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::CompleteLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
+    }
+    #[test]
+    fn local_short_name() {
+        let name = "LOCAL NAME";
+        let ad_fields = AdFields{ short_name:Some(name), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let adv_data= ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
+        assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
+        assert_eq!(DataTypes::ShortenedLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
     }
     #[test]
     fn flags() {
-        let flags = Flags::LeGeneralDiscoverable;
+        let flags = 0xa5;
         let ad_fields = AdFields{ flags:Some(flags), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::Flags as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -360,7 +529,6 @@ mod adfields_write {
         let ad_fields = AdFields{ manufacturer_specific_data:Some(&data), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::ManufacturerSpecificData as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -372,7 +540,6 @@ mod adfields_write {
         let ad_fields = AdFields{ tx_power_level:Some(tx_power_level), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::TxPowerLevel as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -384,7 +551,6 @@ mod adfields_write {
         let ad_fields = AdFields{ appearance:Some(appearance), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::Appearance as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -396,7 +562,6 @@ mod adfields_write {
         let ad_fields = AdFields{ le_bluetooth_device_address:Some(&le_bluetooth_device_address), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + le_bluetooth_device_address.len()), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::LeBluetoothDeviceAddress as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -408,7 +573,6 @@ mod adfields_write {
         let ad_fields = AdFields{ le_role:Some(le_role), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::LeRole as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -420,7 +584,6 @@ mod adfields_write {
         let ad_fields = AdFields{ uri:Some(uri), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), adv_data.len());
         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
         assert_eq!(DataTypes::Uri as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
@@ -432,7 +595,6 @@ mod adfields_write {
         let ad_fields = AdFields{ local_name:Some(name), uri:Some(name), ..AdFields::default() };
         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
         let adv_data= ad_fields.write(&mut buffer);
-        const AD_TYPE_SIZE:usize = 1;
         assert_eq!(2 * (PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
     }
 }

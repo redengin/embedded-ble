@@ -63,7 +63,7 @@ mod app {
         // create the BLE instance
         let info = gap::AdFields {
             local_name: Some("GATT Demo"),
-            flags: Some(gap::Flags::LeGeneralDiscoverable),
+            flags: Some(gap::FLAGS_LE_GENERAL_DISCOVERABLE | gap::FLAGS_BR_EDR_NOT_SUPPORTED),
             ..gap::AdFields::default()
         };
         let ble = Ble::new(hci, info);
