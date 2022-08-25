@@ -347,7 +347,8 @@ impl<'a> AdFields<'a> {
 }
 
 /// https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Generic%20Access%20Profile.pdf
-pub enum DataTypes {
+#[allow(unused)]
+enum DataTypes {
     Flags                           = 0x01,
     Incomplete16bitServiceUuids     = 0x02,
     Complete16bitServiceUuids       = 0x03,
