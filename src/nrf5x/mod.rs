@@ -1,4 +1,4 @@
-use nrf52832_pac::{self as pac};
+use nrf52832_hal::{pac};
 
 use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
@@ -78,8 +78,8 @@ impl Nrf5xHci {
 
     fn get_address(ficr:FICR) -> link_layer::AdvA {
         let mut address:link_layer::Address = [0; 6];
-        address[..4].copy_from_slice( &ficr.deviceaddr[0].read().bits().to_le_bytes());
-        address[4..].copy_from_slice( &(ficr.deviceaddr[1].read().bits() as u16).to_le_bytes());
+        address[2..6].copy_from_slice( &ficr.deviceaddr[0].read().bits().to_be_bytes());
+        address[..2].copy_from_slice( &(ficr.deviceaddr[1].read().bits() as u16).to_be_bytes());
 
         return match ficr.deviceaddrtype.read().deviceaddrtype().variant() {
             DEVICEADDRTYPE_A::PUBLIC => link_layer::AdvA::Public(address),

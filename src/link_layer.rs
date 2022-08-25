@@ -94,7 +94,7 @@ impl<'a> AdvPdu<'a> {
         const TYPE_SHIFT:usize = 0;
         const CHSEL_SHIFT:usize = 5;
         const TXADD_SHIFT:usize = 6;
-        const RXADD_SHIFT:usize = 7;
+        // const RXADD_SHIFT:usize = 7;
 
         // set the pdu type
         buffer[0] = match self {
@@ -175,7 +175,7 @@ impl<'a> AdvPdu<'a> {
         // TODO assert pdu_size per BLE spec
 
         // set the length field
-        const PDU_HEADER_SIZE:usize = 3;
+        const PDU_HEADER_SIZE:usize = 2;
         buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
         return &buffer[..pdu_size];
     }
