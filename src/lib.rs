@@ -25,26 +25,29 @@ impl<'a> Ble<'a> {
         return false;
     }
 
-    pub fn advertise(&self, channel: link_layer::Channel, pdu_type: link_layer::ADV_PDU_TYPE) -> bool
-    {
+    /// send out a BlueTooth non-connectable advertisement
+    pub fn beacon(&self, channel: link_layer::Channel) -> bool {
         // advertising channels are CH37, CH38, CH39
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
-        // TODO support no-init
-        let mut buffer:[u8;link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
-        let pdu = match pdu_type {
-            link_layer::ADV_PDU_TYPE::ADV_IND =>
-                    link_layer::AdvPdu::AdvInd(link_layer::ChSel::Unsupported, &self.hci.adv_a, &self.ad_fields),
-            link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND =>
-                    link_layer::AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields),
-            _ => panic!("NOT SUPPORTED")
-        };
+        let mut buffer:[u8;link_layer::PDU_SIZE_MAX] = [0; link_layer::PDU_SIZE_MAX];
+        let pdu = link_layer::AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields);
 
         return self.hci.send(
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
             pdu.to_buffer(&mut buffer)
-        );
+        )
+    }
+
+    /// send out a BlueTooth connectable advertisement
+    pub fn advertise(&self, channel: link_layer::Channel) -> bool
+    {
+        // advertising channels are CH37, CH38, CH39
+        debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
+
+
+        true
     }
 }

@@ -86,14 +86,8 @@ mod app {
     #[task(shared=[ble], priority=1)]
     fn ble_advertiser(mut cx: ble_advertiser::Context) {
         cx.shared.ble.lock(|ble| {
-            // only advertise if we're not connected
-            if ! ble.is_connected() {
-                let channel = link_layer::Channel::CH37;
-                let pdu_type = link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND;
-                assert!(
-                    ble.advertise(channel, pdu_type)
-                );
-            }
+            let channel = link_layer::Channel::CH37;
+            assert!(ble.beacon(channel));
         });
         // continue advertisement forever
         ble_advertiser::spawn_after(1.secs()).unwrap();

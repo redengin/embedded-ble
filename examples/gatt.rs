@@ -94,10 +94,7 @@ mod app {
             if ! ble.is_connected() {
                 // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
-                let pdu_type = link_layer::ADV_PDU_TYPE::ADV_IND;
-                assert!(
-                    ble.advertise(channel, pdu_type)
-                );
+                assert!(ble.advertise(channel));
             }
         });
         // continue advertisement forever

@@ -420,9 +420,11 @@ pub enum LeRole {
 
 #[cfg(test)]
 mod adfields_write {
+    use crate::link_layer;
+
     use super::*;
 
-    const ADV_PDU_SIZE_MAX:usize = 39;
+    const ADV_PDU_SIZE_MAX:usize = link_layer::PDU_SIZE_MAX;
     const AD_TYPE_SIZE:usize = 1; // BLE specification is ambiguous, but current standard only supports this
 
     #[test]

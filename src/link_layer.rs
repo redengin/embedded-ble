@@ -3,7 +3,6 @@ use crate::{gap::AdFields};
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
-pub const ADV_PDU_SIZE_MAX:usize = 39;
 
 type AccessAddress = u32;
 /// Core_v5.3.pdf#G41.455603
@@ -54,7 +53,6 @@ pub enum ADV_PDU_TYPE {
     AUX_CONNECT_RSP = 0b1000,   // connection response packet
     // TODO what is this?
     ADV_SCAN_IND    = 0b0110,   // Scannable Undirected advertising
-    // TODO what is this?
     ADV_EXT_IND     = 0b0111,   // aka AUX_ADV_IND, AUX_SCAN_RSP, AUX_SYNC_IND, AUX_CHAIN_IND
 }
 
@@ -76,13 +74,21 @@ pub enum ChSel {
     Unsupported,
 }
 
+pub enum AuxAdvMode {
+    NonConnectableNonScannable = 0b00,
+    ConnectableNonScannable = 0b01,
+    NonConnectableScannable = 0b100,
+}
+
 pub enum AdvPdu<'a> {
-    AdvInd(ChSel, &'a AdvA, &'a AdFields<'a>),
-    // AdvDirectInd(ChSel, &'a AdvA, &'a InitA, &'a AdFields<'a>),
     AdvNonConnInd(&'a AdvA, &'a AdFields<'a>),
+    // AuxAdvInd(&'a AdvA, &'a Adi, &'a AdFields<'a>),
+    // AdvInd(ChSel, &'a AdvA, &'a AdFields<'a>),
+    // AdvDirectInd(ChSel, &'a AdvA, &'a InitA, &'a AdFields<'a>),
     // ScanReq(&'a ScanA, &'a AdvA, &'a AdFields<'a>),
     // ScanRsp(&'a AdvA, &'a AdFields<'a>),
     // AdvScanInd(&'a AdvA, &'a AdFields<'a>),
+    // AuxAdvInd()
 }
 
 impl<'a> AdvPdu<'a> {
@@ -104,14 +110,15 @@ impl<'a> AdvPdu<'a> {
                 // txadd bit
                 |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
             },
-            AdvPdu::AdvInd(chsel, adv_a, ..) => {
-                // base pdu type
-                ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
-                // chsel bit
-                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
-                // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
-            },
+            // FIXME appears ADV_IND is no longer supported (instead everything uses AUX_ADV_IND)
+            // AdvPdu::AdvInd(chsel, adv_a, ..) => {
+            //     // base pdu type
+            //     ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
+            //     // chsel bit
+            //     |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+            //     // txadd bit
+            //     |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+            // },
             // AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
             //     // base pdu type
             //     ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
@@ -130,8 +137,8 @@ impl<'a> AdvPdu<'a> {
 
         // set the base pdu data
         match self {
-            AdvPdu::AdvInd(_, adv_a, ..)
-            | AdvPdu::AdvNonConnInd(adv_a, ..) => {
+            // AdvPdu::AdvInd(_, adv_a, ..)
+            AdvPdu::AdvNonConnInd(adv_a, ..) => {
                 // set AdvA
                 match adv_a {
                     TxRxAdvAddress::Public(adv_a) 
@@ -164,9 +171,9 @@ impl<'a> AdvPdu<'a> {
 
         // add the gap elements (AdvData)
         let adv_data= match self {
-            AdvPdu::AdvInd(_, _, ad_fields)
+            // AdvPdu::AdvInd(_, _, ad_fields)
             // | AdvPdu::AdvDirectInd(_, _, _, ad_fields)
-            | AdvPdu::AdvNonConnInd(_, ad_fields) => {
+            AdvPdu::AdvNonConnInd(_, ad_fields) => {
                 ad_fields.write(&mut buffer[pdu_size..])
             }
         };
@@ -194,16 +201,16 @@ mod AdvPdu_to_buffer {
     // const TARGETA_PUBLIC:TargetA = TargetA::Public([0, 0, 0, 0, 0, 0]);
     // const TARGETA_RANDOM:TargetA = TargetA::RandomStatic([0, 0, 0, 0, 0, 0]);
 
-    #[test]
-    fn adv_ind_public() {
-        let empty_ad_fields:AdFields = AdFields{..Default::default()};
-        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-        let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &ADVA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
-        const ADVA_SIZE:usize = 6;
-        assert_eq!(ADV_PDU_HEADER_SIZE + ADVA_SIZE, pdu.len());  // pdu size
-        assert_eq!(ADV_PDU_TYPE::ADV_IND as u8, pdu[0]); // pdu type
-        assert_eq!(ADVA_SIZE as u8, pdu[1]);  // pdu size
-    }
+    // #[test]
+    // fn adv_ind_public() {
+    //     let empty_ad_fields:AdFields = AdFields{..Default::default()};
+    //     let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+    //     let pdu = AdvPdu::AdvInd(ChSel::Unsupported, &ADVA_PUBLIC, &empty_ad_fields).to_buffer(&mut buffer);
+    //     const ADVA_SIZE:usize = 6;
+    //     assert_eq!(ADV_PDU_HEADER_SIZE + ADVA_SIZE, pdu.len());  // pdu size
+    //     assert_eq!(ADV_PDU_TYPE::ADV_IND as u8, pdu[0]); // pdu type
+    //     assert_eq!(ADVA_SIZE as u8, pdu[1]);  // pdu size
+    // }
     // #[test]
     // fn adv_ind_chsel_public() {
     //     let empty_ad_fields:AdFields = AdFields{..Default::default()};
