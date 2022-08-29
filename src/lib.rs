@@ -37,7 +37,7 @@ impl<'a> Ble<'a> {
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
-            pdu.to_buffer(&mut buffer)
+            pdu.write(&mut buffer)
         )
     }
 
@@ -47,6 +47,11 @@ impl<'a> Ble<'a> {
         // advertising channels are CH37, CH38, CH39
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
+        let mut buffer:[u8;link_layer::PDU_SIZE_MAX] = [0; link_layer::PDU_SIZE_MAX];
+        let header = link_layer::AuxAdvExtendedHeader{
+            ..link_layer::AuxAdvExtendedHeader::default()
+        };
+        let pdu = link_layer::AdvPdu::AuxAdvInd(&header, &self.ad_fields);
 
         true
     }

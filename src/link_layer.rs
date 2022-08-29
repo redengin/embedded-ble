@@ -82,26 +82,35 @@ pub enum AdvPdu<'a> {
     AdvNonConnInd(&'a AdvA, &'a AdvData<'a>),
     // AdvScanInd(&'a AdvA, &'a AdFields<'a>),
     // AdvExtInd(),
-    // AuxAdvInd(&'a AdvA, &'a AdFields<'a>),
+    AuxAdvInd(&'a AuxAdvExtendedHeader<'a>, &'a AdFields<'a>),
 
     // ScanReq(&'a ScanA, &'a AdvA, &'a AdFields<'a>),
     // ScanRsp(&'a AdvA, &'a AdFields<'a>),
     // AuxAdvInd()
 }
 
+#[derive(Default)]
 /// Core_v5.3-5.pdf#G41.686208
-struct AuxAdvExtendedHeader {
-    advA: Option<AdvA>,
-    targetA: Option<TargetA>,
-    cteInfo: Option<CteInfo>,
-    adi: Option<Adi>,
-    auxPtr: Option<AuxPtr>,
-    syncInfo: Option<SyncInfo>,
+pub struct AuxAdvExtendedHeader<'a> {
+    pub advA: Option<&'a AdvA>,
+    pub targetA: Option<TargetA>,
+    pub cteInfo: Option<CteInfo>,
+    pub adi: Option<Adi>,
+    pub auxPtr: Option<AuxPtr>,
+    pub syncInfo: Option<SyncInfo>,
     /// tx power (-127 to 127 dbM)
-    txpower: i8
+    pub txpower: Option<i8>
 }
+
+/// Core_v5.3-5.pdf#G41.685952
+pub enum AuxAdvMode {
+    NonConnectableNonScannable = 0b00,
+    ConnectableNonScannable = 0b01,
+    NonConnectableScannable = 0b100,
+}
+
 /// Core_v5.3-5.pdf#G41.1317593
-struct CteInfo {
+pub struct CteInfo {
     time: u8,   /* 5 bits */
     rfu: bool,
     cteType: CteType,
@@ -113,13 +122,13 @@ enum CteType {
     AoAConstantToneExtensionWith2uSlots = 2,
 }
 /// Core_v5.3-5.pdf#G41.693403
-struct Adi {
+pub struct Adi {
     did: u16,   /* 12 bits data ID */
     sid: u8,    /* 4 bits set ID */
 }
 
 /// Core_v5.3-5.pdf#G41.693502
-struct AuxPtr {
+pub struct AuxPtr {
     channel_index: Channel,
     ca: ClockAccuracy,       /* clock accuracy */
     offset_units: OffsetUnits,
@@ -147,7 +156,7 @@ enum AuxPhy {
 }
 
 /// Core_v5.3-5.pdf#G41.783247
-struct SyncInfo {
+pub struct SyncInfo {
     offset_base: u16,   /* 13 bits */
     offset_units: OffsetUnits,
     /// if true, add 2.4576 seconds to sync period
@@ -161,31 +170,25 @@ struct SyncInfo {
     aa: AccessAddress,
     crcInit: [u8;3],
     /// counter of sync events TODO wtf is this?
-    // periodicEventCounter: 2 octets
+    _periodicEventCounter: u16
 }
 
 /// Core_v5.3-5.pdf#G41.459735
 enum Sca {
-    ppm251to500 = 0,
-    ppm151to250 = 1,
-    ppm101to150 = 2,
-    ppm76to100  = 3,
-    ppm51to75   = 4,
-    ppm31to50   = 5,
-    ppm21to30   = 6,
-    ppm0to20    = 7,
-}
-
-/// Core_v5.3-5.pdf#G41.685952
-enum AuxAdvMode {
-    NonConnectableNonScannable = 0b00,
-    ConnectableNonScannable = 0b01,
-    NonConnectableScannable = 0b100,
+    Ppm251to500 = 0,
+    Ppm151to250 = 1,
+    Ppm101to150 = 2,
+    Ppm76to100  = 3,
+    Ppm51to75   = 4,
+    Ppm31to50   = 5,
+    Ppm21to30   = 6,
+    Ppm0to20    = 7,
 }
 
 
 impl<'a> AdvPdu<'a> {
-    pub(crate) fn to_buffer(&self, buffer: &'a mut [u8]) -> &'a [u8]
+    /// writes the data into the buffer and returns the slice of actual data
+    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8]
     {
         let mut pdu_size = 0;
 
@@ -222,6 +225,10 @@ impl<'a> AdvPdu<'a> {
                 // rxadd bit
                 |   (match target_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << RXADD_SHIFT)
             },
+            AdvPdu::AuxAdvInd(..) => {
+                // base pdu type
+                (ADV_PDU_TYPE::ADV_EXT_IND as u8) << TYPE_SHIFT
+            }
         };
         pdu_size += 1;
 
@@ -260,12 +267,18 @@ impl<'a> AdvPdu<'a> {
                     },
                 }
             },
+            AdvPdu::AuxAdvInd(header, ..) => {
+                // write the extended header
+                pdu_size += header.write(AuxAdvMode::ConnectableNonScannable, &mut buffer[pdu_size..]);
+            }
         }
 
         // add the gap elements (AdvData)
         match self {
             AdvPdu::AdvInd(_, _, ad_fields)
-            | AdvPdu::AdvNonConnInd(_, ad_fields) => {
+            | AdvPdu::AdvNonConnInd(_, ad_fields)
+            | AdvPdu::AuxAdvInd(_, ad_fields)
+            => {
                 let adv_data = ad_fields.write(&mut buffer[pdu_size..]);
                 pdu_size += adv_data.len();
             }
@@ -278,6 +291,33 @@ impl<'a> AdvPdu<'a> {
         const PDU_HEADER_SIZE:usize = 2;
         buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
         return &buffer[..pdu_size];
+    }
+}
+
+impl<'a> AuxAdvExtendedHeader<'a> {
+    fn write(&'a self, mode: AuxAdvMode, buffer: &'a mut [u8]) -> usize
+    {
+        panic!("not implemented");
+        let mut header_size: usize = 0;
+
+        // skip first byte (length and mode) - will be set at end
+        header_size += 1;
+
+        match self.advA {
+            Some(advA) => {
+
+            }
+            None => {}
+        }
+
+
+        // set the header length and AdvMode
+        const LENGTH_SHIFT: usize = 6;
+        const ADV_MODE_SHIFT: usize = 0;
+        buffer[0] = (((header_size - 1) as u8) << LENGTH_SHIFT)
+                    | ((mode as u8) << ADV_MODE_SHIFT);
+        
+        return header_size;
     }
 }
 

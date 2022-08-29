@@ -95,7 +95,7 @@ impl<'a> AdFields<'a> {
     /// places ad structures as long as they will fit in packet
     pub fn write(&'a self, buffer: &'a mut [u8]) -> &[u8]
     {
-        let mut pdu_size = 0;
+        let mut ad_size = 0;
 
         // specification allows this to be larger than one-byte, but only
         //      single byte types are currently defined
@@ -103,102 +103,102 @@ impl<'a> AdFields<'a> {
 
         // add incomplete service uuid 16 list
         match self.incomplete_list_service_uuid_16 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Incomplete16bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Incomplete16bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 2)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 2;
+                    buffer[ad_size..(ad_size + 2)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 2;
                 }
             }
             None => {}
         }
         // add complete service uuid 16 list
         match self.complete_list_service_uuid_16 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (2 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Complete16bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Complete16bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 2)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 2;
+                    buffer[ad_size..(ad_size + 2)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 2;
                 }
             }
             None => {}
         }
         // add incomplete service uuid 32 list
         match self.incomplete_list_service_uuid_32 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Incomplete32bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Incomplete32bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 4)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 4;
+                    buffer[ad_size..(ad_size + 4)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 4;
                 }
             }
             None => {}
         }
         // add complete service uuid 32 list
         match self.complete_list_service_uuid_32 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (4 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Complete32bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Complete32bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 4)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 4;
+                    buffer[ad_size..(ad_size + 4)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 4;
                 }
             }
             None => {}
         }
         // add incomplete service uuid 128 list
         match self.incomplete_list_service_uuid_128 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Incomplete128bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Incomplete128bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 16)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 16;
+                    buffer[ad_size..(ad_size + 16)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 16;
                 }
             }
             None => {}
         }
         // add complete service uuid 128 list
         match self.complete_list_service_uuid_128 {
-            Some(uuids) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
+            Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + (16 * uuids.len())) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Complete128bitServiceUuids as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Complete128bitServiceUuids as u8;
+                ad_size += 1;
                 // set ad structure payload
                 for uuid in uuids {
-                    buffer[pdu_size..(pdu_size + 16)].copy_from_slice(&uuid.to_le_bytes());
-                    pdu_size += 16;
+                    buffer[ad_size..(ad_size + 16)].copy_from_slice(&uuid.to_le_bytes());
+                    ad_size += 16;
                 }
             }
             None => {}
@@ -206,143 +206,143 @@ impl<'a> AdFields<'a> {
 
         // add local_name
         match self.local_name {
-            Some(name) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
+            Some(name) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + name.len()) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + name.len()) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::CompleteLocalName as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::CompleteLocalName as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + name.len())].copy_from_slice(name.as_bytes());
-                pdu_size += name.len();
+                buffer[ad_size..(ad_size + name.len())].copy_from_slice(name.as_bytes());
+                ad_size += name.len();
             }
             None => {}
         }
         // add short_name
         match self.short_name {
-            Some(name) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
+            Some(name) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + name.len()) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + name.len()) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::ShortenedLocalName as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::ShortenedLocalName as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + name.len())].copy_from_slice(name.as_bytes());
-                pdu_size += name.len();
+                buffer[ad_size..(ad_size + name.len())].copy_from_slice(name.as_bytes());
+                ad_size += name.len();
             }
             None => {}
         }
         // add flags
         match self.flags {
-            Some(flags) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
+            Some(flags) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + 1) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + 1) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Flags as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Flags as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size] = flags as u8;
-                pdu_size += 1;
+                buffer[ad_size] = flags as u8;
+                ad_size += 1;
             }
             None => {}
         }
         // add manufacturer data
         match self.manufacturer_specific_data {
-            Some(data) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + data.len()) {
+            Some(data) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + data.len()) {
                 // manufacturer data must have 2 byte company identifier to be valid
                 assert!(data.len() >= 2);
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + data.len()) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + data.len()) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::ManufacturerSpecificData as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::ManufacturerSpecificData as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + data.len())].copy_from_slice(data);
-                pdu_size += data.len();
+                buffer[ad_size..(ad_size + data.len())].copy_from_slice(data);
+                ad_size += data.len();
             }
             None => {}
         }
         // add tx_power_level
         match self.tx_power_level {
-            Some(level) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
+            Some(level) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + 1) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + 1) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::TxPowerLevel as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::TxPowerLevel as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size] = level as u8;
-                pdu_size += 1;
+                buffer[ad_size] = level as u8;
+                ad_size += 1;
             }
             None => {}
         }
         // add appearance
         match self.appearance {
-            Some(id) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2) {
+            Some(id) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + 2) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + 2) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Appearance as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Appearance as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + 2)].copy_from_slice(&id.to_le_bytes());
-                pdu_size += 2;
+                buffer[ad_size..(ad_size + 2)].copy_from_slice(&id.to_le_bytes());
+                ad_size += 2;
             }
             None => {}
         }
         // add le device address
         match self.le_bluetooth_device_address {
-            Some(address) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + address.len()) {
+            Some(address) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + address.len()) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + address.len()) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + address.len()) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::LeBluetoothDeviceAddress as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::LeBluetoothDeviceAddress as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + address.len())].copy_from_slice(address);
-                pdu_size += address.len();
+                buffer[ad_size..(ad_size + address.len())].copy_from_slice(address);
+                ad_size += address.len();
             }
             None => {}
         }
         // add le role
         match self.le_role{
-            Some(role) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
+            Some(role) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + 1) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + 1) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::LeRole as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::LeRole as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size] = role as u8;
-                pdu_size += 1;
+                buffer[ad_size] = role as u8;
+                ad_size += 1;
             }
             None => {}
         }
         // add uri
         match self.uri {
-            Some(uri) => if buffer.len() >= (pdu_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()) {
+            Some(uri) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()) {
                 // set ad structure length
-                buffer[pdu_size] = (AD_TYPE_SIZE + uri.len()) as u8;
-                pdu_size += 1;
+                buffer[ad_size] = (AD_TYPE_SIZE + uri.len()) as u8;
+                ad_size += 1;
                 // set ad structure type
-                buffer[pdu_size] = DataTypes::Uri as u8;
-                pdu_size += 1;
+                buffer[ad_size] = DataTypes::Uri as u8;
+                ad_size += 1;
                 // set ad structure payload
-                buffer[pdu_size..(pdu_size + uri.len())].copy_from_slice(uri.as_bytes());
-                pdu_size += uri.len();
+                buffer[ad_size..(ad_size + uri.len())].copy_from_slice(uri.as_bytes());
+                ad_size += uri.len();
             }
             None => {}
         }
 
-        &buffer[..pdu_size]
+        &buffer[..ad_size]
     }
 }
 
