@@ -93,7 +93,7 @@ pub enum AdvPdu<'a> {
 /// Core_v5.3-5.pdf#G41.686208
 pub struct AuxAdvExtendedHeader<'a> {
     pub advA: Option<&'a AdvA>,
-    pub targetA: Option<TargetA>,
+    pub targetA: Option<&'a TargetA>,
     pub cteInfo: Option<CteInfo>,
     pub adi: Option<Adi>,
     pub auxPtr: Option<AuxPtr>,
@@ -109,24 +109,27 @@ pub enum AuxAdvMode {
     NonConnectableScannable = 0b100,
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.1317593
 pub struct CteInfo {
     time: u8,   /* 5 bits */
-    rfu: bool,
     cteType: CteType,
 }
 
+#[derive(Copy,Clone)]
 enum CteType {
     AoAConstantToneExtension = 0,
     AoAConstantToneExtensionWith1uSlots = 1,
     AoAConstantToneExtensionWith2uSlots = 2,
 }
 /// Core_v5.3-5.pdf#G41.693403
+#[derive(Copy,Clone)]
 pub struct Adi {
     did: u16,   /* 12 bits data ID */
     sid: u8,    /* 4 bits set ID */
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.693502
 pub struct AuxPtr {
     channel_index: Channel,
@@ -136,18 +139,21 @@ pub struct AuxPtr {
     aux_phy: AuxPhy,
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.694084
 enum ClockAccuracy {
     Low     = 0,    /* 51 ppm to 500 ppm */
     High    = 1,    /* 0 ppm to 50 ppm */
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.693560
 enum OffsetUnits {
     Small   = 0,    /* 30 us offset */
     Large   = 1,    /* 300 us offset */
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.693876
 enum AuxPhy {
     Le1M    = 0b000,
@@ -155,6 +161,7 @@ enum AuxPhy {
     LeCoded = 0b010,
 }
 
+#[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.783247
 pub struct SyncInfo {
     offset_base: u16,   /* 13 bits */
@@ -174,6 +181,7 @@ pub struct SyncInfo {
 }
 
 /// Core_v5.3-5.pdf#G41.459735
+#[derive(Copy,Clone)]
 enum Sca {
     Ppm251to500 = 0,
     Ppm151to250 = 1,
@@ -200,30 +208,30 @@ impl<'a> AdvPdu<'a> {
 
         // set the pdu type
         buffer[0] = match self {
-            AdvPdu::AdvNonConnInd(adv_a, ..) => {
+            AdvPdu::AdvNonConnInd(advA, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
             },
             // FIXME appears ADV_IND is no longer supported (instead everything uses AUX_ADV_IND)
-            AdvPdu::AdvInd(chsel, adv_a, ..) => {
+            AdvPdu::AdvInd(chsel, advA, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
                 // chsel bit
-                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+                | (match chsel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
             },
-            AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
+            AdvPdu::AdvDirectInd(chsel, advA, targetA, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
                 // chsel bit
-                |   (match chsel {ChSel::Supported => 1, _ => 0} << CHSEL_SHIFT)
+                | (match chsel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
                 // txadd bit
-                |   (match adv_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << TXADD_SHIFT)
+                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
                 // rxadd bit
-                |   (match target_a {TxRxAdvAddress::Public(..) => 0, _ => 1} << RXADD_SHIFT)
+                | (match targetA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << RXADD_SHIFT)
             },
             AdvPdu::AuxAdvInd(..) => {
                 // base pdu type
@@ -237,33 +245,32 @@ impl<'a> AdvPdu<'a> {
 
         // set the base pdu data
         match self {
-            AdvPdu::AdvInd(_, adv_a, ..)
-            | AdvPdu::AdvNonConnInd(adv_a, ..) => {
-                // set AdvA
-                match adv_a {
-                    TxRxAdvAddress::Public(adv_a) 
-                    | TxRxAdvAddress::RandomStatic(adv_a) 
-                    | TxRxAdvAddress::PrivateStatic(adv_a) => {
-                        buffer[pdu_size..(pdu_size+adv_a.len())].copy_from_slice(adv_a);
-                        pdu_size += adv_a.len();
+            AdvPdu::AdvInd(_, advA, ..)
+            | AdvPdu::AdvNonConnInd(advA, ..) => {
+                match advA {
+                    TxRxAdvAddress::Public(address) 
+                    | TxRxAdvAddress::RandomStatic(address) 
+                    | TxRxAdvAddress::PrivateStatic(address) => {
+                        buffer[pdu_size..(pdu_size+address.len())].copy_from_slice(address);
+                        pdu_size += address.len();
                     },
                 }
             },
-            AdvPdu::AdvDirectInd(_, adv_a, target_a, ..) => {
-                match adv_a {
-                    TxRxAdvAddress::Public(adv_a) 
-                    | TxRxAdvAddress::RandomStatic(adv_a) 
-                    | TxRxAdvAddress::PrivateStatic(adv_a) => {
-                        buffer[pdu_size..(pdu_size+adv_a.len())].copy_from_slice(adv_a);
-                        pdu_size += adv_a.len();
+            AdvPdu::AdvDirectInd(_, advA, targetA, ..) => {
+                match advA {
+                    TxRxAdvAddress::Public(address) 
+                    | TxRxAdvAddress::RandomStatic(address) 
+                    | TxRxAdvAddress::PrivateStatic(address) => {
+                        buffer[pdu_size..(pdu_size+address.len())].copy_from_slice(address);
+                        pdu_size += address.len();
                     },
                 }
-                match target_a {
-                    TxRxAdvAddress::Public(target_a) 
-                    | TxRxAdvAddress::RandomStatic(target_a) 
-                    | TxRxAdvAddress::PrivateStatic(target_a) => {
-                        buffer[pdu_size..(pdu_size+target_a.len())].copy_from_slice(target_a);
-                        pdu_size += target_a.len();
+                match targetA {
+                    TxRxAdvAddress::Public(address) 
+                    | TxRxAdvAddress::RandomStatic(address) 
+                    | TxRxAdvAddress::PrivateStatic(address) => {
+                        buffer[pdu_size..(pdu_size+address.len())].copy_from_slice(address);
+                        pdu_size += address.len();
                     },
                 }
             },
@@ -275,17 +282,13 @@ impl<'a> AdvPdu<'a> {
 
         // add the gap elements (AdvData)
         match self {
-            AdvPdu::AdvInd(_, _, ad_fields)
-            | AdvPdu::AdvNonConnInd(_, ad_fields)
-            | AdvPdu::AuxAdvInd(_, ad_fields)
-            => {
-                let adv_data = ad_fields.write(&mut buffer[pdu_size..]);
-                pdu_size += adv_data.len();
+            AdvPdu::AdvInd(_, _, advData)
+            | AdvPdu::AdvNonConnInd(_, advData)
+            | AdvPdu::AuxAdvInd(_, advData) => {
+                pdu_size += advData.write(&mut buffer[pdu_size..]);
             }
-            AdvPdu::AdvDirectInd(..) => { /* ad fields not supported */ }
+            AdvPdu::AdvDirectInd(..) => { /* advData not supported */ }
         };
-
-        // TODO assert pdu_size per BLE spec
 
         // set the length field
         const PDU_HEADER_SIZE:usize = 2;
@@ -297,19 +300,126 @@ impl<'a> AdvPdu<'a> {
 impl<'a> AuxAdvExtendedHeader<'a> {
     fn write(&'a self, mode: AuxAdvMode, buffer: &'a mut [u8]) -> usize
     {
-        panic!("not implemented");
         let mut header_size: usize = 0;
 
         // skip first byte (length and mode) - will be set at end
         header_size += 1;
 
+
+        // set the extended header flags
+        const ADVA_SHIFT:usize = 0;
+        const TARGETA_SHIFT:usize = 1;
+        const CTEINFO_SHIFT:usize = 2;
+        const ADI_SHIFT:usize = 3;
+        const AUXPTR_SHIFT:usize = 4;
+        const SYNCINFO_SHIFT:usize = 5;
+        const TXPOWER_SHIFT:usize = 6;
+        buffer[header_size] =
+              (match self.advA { Some(_) => 1, _ => 0 } << ADVA_SHIFT)
+            | (match self.targetA { Some(_) => 1, _ => 0 } << TARGETA_SHIFT)
+            | (match self.cteInfo { Some(_) => 1, _ => 0 } << CTEINFO_SHIFT)
+            | (match self.adi { Some(_) => 1, _ => 0 } << ADI_SHIFT)
+            | (match self.auxPtr { Some(_) => 1, _ => 0 } << AUXPTR_SHIFT)
+            | (match self.syncInfo { Some(_) => 1, _ => 0 } << SYNCINFO_SHIFT)
+            | (match self.txpower { Some(_) => 1, _ => 0 } << TXPOWER_SHIFT);
+        header_size += 1;
+
+        // (optional) set AdvA
         match self.advA {
             Some(advA) => {
-
+                match advA {
+                    TxRxAdvAddress::Public(address) 
+                    | TxRxAdvAddress::RandomStatic(address) 
+                    | TxRxAdvAddress::PrivateStatic(address) => {
+                        buffer[header_size..(header_size+address.len())].copy_from_slice(address);
+                        header_size += address.len();
+                    }
+                }
             }
             None => {}
         }
 
+        // (optional) set TargetA
+        match self.targetA {
+            Some(targetA) => {
+                match targetA {
+                    TxRxAdvAddress::Public(address) 
+                    | TxRxAdvAddress::RandomStatic(address) 
+                    | TxRxAdvAddress::PrivateStatic(address) => {
+                        buffer[header_size..(header_size+address.len())].copy_from_slice(address);
+                        header_size += address.len();
+                    }
+                }
+            }
+            None => {}
+        }
+
+        // (optional) set CTEInfo
+        match self.cteInfo {
+            Some(cteInfo) => {
+                const TIME_SHIFT:usize = 3;
+                const TYPE_SHIFT:usize = 0;
+                buffer[header_size] =
+                      (cteInfo.time << TIME_SHIFT)
+                    | ((cteInfo.cteType as u8) << TYPE_SHIFT);
+                header_size += 1;
+            }
+            None => {}
+        }
+
+        // (optional) set AdvDataInfo (ADI)
+        match self.adi {
+            Some(adi) => {
+                buffer[header_size] = (adi.did >> 4) as u8;
+                header_size += 1;
+                buffer[header_size] =
+                      (adi.did << 4) as u8
+                    | adi.sid;
+                header_size += 1;
+            }
+            None => {}
+        }
+
+        // (optional) set AuxPtr
+        match self.auxPtr {
+            Some(auxPtr) => {
+                const CHANNEL_SHIFT:usize = 2;
+                const CA_SHIFT:usize = 1;
+                const OFFSETUNITS_SHIFT:usize = 0;
+                buffer[header_size] =
+                      ((auxPtr.channel_index as u8) << CHANNEL_SHIFT)
+                    | ((auxPtr.ca as u8) << CA_SHIFT)
+                    | ((auxPtr.offset_units as u8) << OFFSETUNITS_SHIFT);
+                header_size += 1;
+                buffer[header_size] = (auxPtr.aux_offset >> 5) as u8;
+                header_size += 1;
+                buffer[header_size] =
+                      ((auxPtr.aux_offset << 3) as u8)
+                    | (auxPtr.aux_phy as u8);
+                header_size += 1;
+            }
+            None => {}
+        }
+
+        // (optional) set SyncInfo
+        match self.syncInfo {
+            Some(syncInfo) => {
+                panic!("not implemented");
+            }
+            None => {}
+        }
+
+        // (optional) set TxPower
+        match self.txpower {
+            Some(txpower) => {
+                buffer[header_size] = txpower as u8;
+                header_size += 1;
+            }
+            None => {}
+        }
+
+        // (optional) set ACAD
+        // FIXME not implemented
 
         // set the header length and AdvMode
         const LENGTH_SHIFT: usize = 6;

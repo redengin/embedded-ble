@@ -93,7 +93,7 @@ pub struct AdFields<'a> {
 
 impl<'a> AdFields<'a> {
     /// places ad structures as long as they will fit in packet
-    pub fn write(&'a self, buffer: &'a mut [u8]) -> &[u8]
+    pub fn write(&'a self, buffer: &'a mut [u8]) -> usize
     {
         let mut ad_size = 0;
 
@@ -342,7 +342,7 @@ impl<'a> AdFields<'a> {
             None => {}
         }
 
-        &buffer[..ad_size]
+        return ad_size;
     }
 }
 
