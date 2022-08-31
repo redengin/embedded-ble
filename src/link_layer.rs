@@ -125,8 +125,8 @@ enum CteType {
 /// Core_v5.3-5.pdf#G41.693403
 #[derive(Copy,Clone)]
 pub struct Adi {
-    did: u16,   /* 12 bits data ID */
-    sid: u8,    /* 4 bits set ID */
+    pub did: u16,   /* 12 bits data ID */
+    pub sid: u8,    /* 4 bits set ID */
 }
 
 #[derive(Copy,Clone)]
