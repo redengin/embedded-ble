@@ -49,7 +49,7 @@ impl<'a> Ble<'a> {
 
         let mut buffer:[u8;link_layer::PDU_SIZE_MAX] = [0; link_layer::PDU_SIZE_MAX];
         let header = link_layer::AuxAdvExtendedHeader{
-            advA: Some(&self.hci.adv_a),
+            adv_a: Some(&self.hci.adv_a),
             adi: Some(link_layer::Adi{did: 0, sid: 0}),
             ..link_layer::AuxAdvExtendedHeader::default()
         };

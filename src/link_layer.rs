@@ -72,8 +72,8 @@ pub enum ChSel {
 /* type aliases to reflect naming in Bluetooth standard for PDUs */
 pub type AdvA = TxRxAdvAddress;
 type TargetA = TxRxAdvAddress;
-type InitA = TxRxAdvAddress;
-type ScanA = Address;
+// type InitA = TxRxAdvAddress;
+// type ScanA = Address;
 type AdvData<'a> = AdFields<'a>;
 
 pub enum AdvPdu<'a> {
@@ -92,12 +92,12 @@ pub enum AdvPdu<'a> {
 #[derive(Default)]
 /// Core_v5.3-5.pdf#G41.686208
 pub struct AuxAdvExtendedHeader<'a> {
-    pub advA: Option<&'a AdvA>,
-    pub targetA: Option<&'a TargetA>,
-    pub cteInfo: Option<CteInfo>,
+    pub adv_a: Option<&'a AdvA>,
+    pub target_a: Option<&'a TargetA>,
+    pub cte_info: Option<CteInfo>,
     pub adi: Option<Adi>,
-    pub auxPtr: Option<AuxPtr>,
-    pub syncInfo: Option<SyncInfo>,
+    pub aux_ptr: Option<AuxPtr>,
+    pub sync_info: Option<SyncInfo>,
     /// tx power (-127 to 127 dbM)
     pub txpower: Option<i8>
 }
@@ -113,14 +113,14 @@ pub enum AuxAdvMode {
 /// Core_v5.3-5.pdf#G41.1317593
 pub struct CteInfo {
     time: u8,   /* 5 bits */
-    cteType: CteType,
+    cte_type: CteType,
 }
 
 #[derive(Copy,Clone)]
 enum CteType {
-    AoAConstantToneExtension = 0,
-    AoAConstantToneExtensionWith1uSlots = 1,
-    AoAConstantToneExtensionWith2uSlots = 2,
+    // AoAConstantToneExtension = 0,
+    // AoAConstantToneExtensionWith1uSlots = 1,
+    // AoAConstantToneExtensionWith2uSlots = 2,
 }
 /// Core_v5.3-5.pdf#G41.693403
 #[derive(Copy,Clone)]
@@ -142,45 +142,46 @@ pub struct AuxPtr {
 #[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.694084
 enum ClockAccuracy {
-    Low     = 0,    /* 51 ppm to 500 ppm */
-    High    = 1,    /* 0 ppm to 50 ppm */
+    // Low     = 0,    /* 51 ppm to 500 ppm */
+    // High    = 1,    /* 0 ppm to 50 ppm */
 }
 
 #[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.693560
 enum OffsetUnits {
-    Small   = 0,    /* 30 us offset */
-    Large   = 1,    /* 300 us offset */
+    // Small   = 0,    /* 30 us offset */
+    // Large   = 1,    /* 300 us offset */
 }
 
 #[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.693876
 enum AuxPhy {
-    Le1M    = 0b000,
-    Le2M    = 0b001,
-    LeCoded = 0b010,
+    // Le1M    = 0b000,
+    // Le2M    = 0b001,
+    // LeCoded = 0b010,
 }
 
 #[derive(Copy,Clone)]
 /// Core_v5.3-5.pdf#G41.783247
 pub struct SyncInfo {
-    offset_base: u16,   /* 13 bits */
-    offset_units: OffsetUnits,
+    _offset_base: u16,   /* 13 bits */
+    _offset_units: OffsetUnits,
     /// if true, add 2.4576 seconds to sync period
-    offset_adjust: bool,
+    _offset_adjust: bool,
     /// period (interval * 1.25ms)
-    interval: u16,
+    _interval: u16,
     /// 37 bit bitmap of channels used
-    chM: u64,
+    _ch_map: u64,
     /// sleep clock accuracy
-    sca: Sca,
-    aa: AccessAddress,
-    crcInit: [u8;3],
+    _sca: Sca,
+    _aa: AccessAddress,
+    _crc_init: [u8;3],
     /// counter of sync events TODO wtf is this?
-    _periodicEventCounter: u16
+    _periodic_event_counter: u16
 }
 
 /// Core_v5.3-5.pdf#G41.459735
+#[allow(unused)]
 #[derive(Copy,Clone)]
 enum Sca {
     Ppm251to500 = 0,
@@ -208,30 +209,30 @@ impl<'a> AdvPdu<'a> {
 
         // set the pdu type
         buffer[0] = match self {
-            AdvPdu::AdvNonConnInd(advA, ..) => {
+            AdvPdu::AdvNonConnInd(adv_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
                 // txadd bit
-                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
+                | (match adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
             },
             // FIXME appears ADV_IND is no longer supported (instead everything uses AUX_ADV_IND)
-            AdvPdu::AdvInd(chsel, advA, ..) => {
+            AdvPdu::AdvInd(chsel, adv_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
                 // chsel bit
                 | (match chsel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
                 // txadd bit
-                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
+                | (match adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
             },
-            AdvPdu::AdvDirectInd(chsel, advA, targetA, ..) => {
+            AdvPdu::AdvDirectInd(chsel, adv_a, target_a, ..) => {
                 // base pdu type
                 ((ADV_PDU_TYPE::ADV_DIRECT_IND as u8) << TYPE_SHIFT)
                 // chsel bit
                 | (match chsel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
                 // txadd bit
-                | (match advA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
+                | (match adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT)
                 // rxadd bit
-                | (match targetA { TxRxAdvAddress::Public(..) => 0, _ => 1 } << RXADD_SHIFT)
+                | (match target_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << RXADD_SHIFT)
             },
             AdvPdu::AuxAdvInd(..) => {
                 // base pdu type
@@ -245,9 +246,9 @@ impl<'a> AdvPdu<'a> {
 
         // set the base pdu data
         match self {
-            AdvPdu::AdvInd(_, advA, ..)
-            | AdvPdu::AdvNonConnInd(advA, ..) => {
-                match advA {
+            AdvPdu::AdvInd(_, adv_a, ..)
+            | AdvPdu::AdvNonConnInd(adv_a, ..) => {
+                match adv_a {
                     TxRxAdvAddress::Public(address) 
                     | TxRxAdvAddress::RandomStatic(address) 
                     | TxRxAdvAddress::PrivateStatic(address) => {
@@ -256,8 +257,8 @@ impl<'a> AdvPdu<'a> {
                     },
                 }
             },
-            AdvPdu::AdvDirectInd(_, advA, targetA, ..) => {
-                match advA {
+            AdvPdu::AdvDirectInd(_, adv_a, target_a, ..) => {
+                match adv_a {
                     TxRxAdvAddress::Public(address) 
                     | TxRxAdvAddress::RandomStatic(address) 
                     | TxRxAdvAddress::PrivateStatic(address) => {
@@ -265,7 +266,7 @@ impl<'a> AdvPdu<'a> {
                         pdu_size += address.len();
                     },
                 }
-                match targetA {
+                match target_a {
                     TxRxAdvAddress::Public(address) 
                     | TxRxAdvAddress::RandomStatic(address) 
                     | TxRxAdvAddress::PrivateStatic(address) => {
@@ -282,10 +283,10 @@ impl<'a> AdvPdu<'a> {
 
         // add the gap elements (AdvData)
         match self {
-            AdvPdu::AdvInd(_, _, advData)
-            | AdvPdu::AdvNonConnInd(_, advData)
-            | AdvPdu::AuxAdvInd(_, advData) => {
-                pdu_size += advData.write(&mut buffer[pdu_size..]);
+            AdvPdu::AdvInd(_, _, adv_data)
+            | AdvPdu::AdvNonConnInd(_, adv_data)
+            | AdvPdu::AuxAdvInd(_, adv_data) => {
+                pdu_size += adv_data.write(&mut buffer[pdu_size..]);
             }
             AdvPdu::AdvDirectInd(..) => { /* advData not supported */ }
         };
@@ -315,19 +316,19 @@ impl<'a> AuxAdvExtendedHeader<'a> {
         const SYNCINFO_SHIFT:usize = 5;
         const TXPOWER_SHIFT:usize = 6;
         buffer[header_size] =
-              (match self.advA { Some(_) => 1, _ => 0 } << ADVA_SHIFT)
-            | (match self.targetA { Some(_) => 1, _ => 0 } << TARGETA_SHIFT)
-            | (match self.cteInfo { Some(_) => 1, _ => 0 } << CTEINFO_SHIFT)
+              (match self.adv_a { Some(_) => 1, _ => 0 } << ADVA_SHIFT)
+            | (match self.target_a { Some(_) => 1, _ => 0 } << TARGETA_SHIFT)
+            | (match self.cte_info { Some(_) => 1, _ => 0 } << CTEINFO_SHIFT)
             | (match self.adi { Some(_) => 1, _ => 0 } << ADI_SHIFT)
-            | (match self.auxPtr { Some(_) => 1, _ => 0 } << AUXPTR_SHIFT)
-            | (match self.syncInfo { Some(_) => 1, _ => 0 } << SYNCINFO_SHIFT)
+            | (match self.aux_ptr { Some(_) => 1, _ => 0 } << AUXPTR_SHIFT)
+            | (match self.sync_info { Some(_) => 1, _ => 0 } << SYNCINFO_SHIFT)
             | (match self.txpower { Some(_) => 1, _ => 0 } << TXPOWER_SHIFT);
         header_size += 1;
 
         // (optional) set AdvA
-        match self.advA {
-            Some(advA) => {
-                match advA {
+        match self.adv_a {
+            Some(adv_a) => {
+                match adv_a {
                     TxRxAdvAddress::Public(address) 
                     | TxRxAdvAddress::RandomStatic(address) 
                     | TxRxAdvAddress::PrivateStatic(address) => {
@@ -340,9 +341,9 @@ impl<'a> AuxAdvExtendedHeader<'a> {
         }
 
         // (optional) set TargetA
-        match self.targetA {
-            Some(targetA) => {
-                match targetA {
+        match self.target_a {
+            Some(target_a) => {
+                match target_a {
                     TxRxAdvAddress::Public(address) 
                     | TxRxAdvAddress::RandomStatic(address) 
                     | TxRxAdvAddress::PrivateStatic(address) => {
@@ -355,13 +356,13 @@ impl<'a> AuxAdvExtendedHeader<'a> {
         }
 
         // (optional) set CTEInfo
-        match self.cteInfo {
-            Some(cteInfo) => {
+        match self.cte_info {
+            Some(cte_info) => {
                 const TIME_SHIFT:usize = 3;
                 const TYPE_SHIFT:usize = 0;
                 buffer[header_size] =
-                      (cteInfo.time << TIME_SHIFT)
-                    | ((cteInfo.cteType as u8) << TYPE_SHIFT);
+                      (cte_info.time << TIME_SHIFT)
+                    | ((cte_info.cte_type as u8) << TYPE_SHIFT);
                 header_size += 1;
             }
             None => {}
@@ -381,29 +382,29 @@ impl<'a> AuxAdvExtendedHeader<'a> {
         }
 
         // (optional) set AuxPtr
-        match self.auxPtr {
-            Some(auxPtr) => {
+        match self.aux_ptr {
+            Some(aux_ptr) => {
                 const CHANNEL_SHIFT:usize = 2;
                 const CA_SHIFT:usize = 1;
                 const OFFSETUNITS_SHIFT:usize = 0;
                 buffer[header_size] =
-                      ((auxPtr.channel_index as u8) << CHANNEL_SHIFT)
-                    | ((auxPtr.ca as u8) << CA_SHIFT)
-                    | ((auxPtr.offset_units as u8) << OFFSETUNITS_SHIFT);
+                      ((aux_ptr.channel_index as u8) << CHANNEL_SHIFT)
+                    | ((aux_ptr.ca as u8) << CA_SHIFT)
+                    | ((aux_ptr.offset_units as u8) << OFFSETUNITS_SHIFT);
                 header_size += 1;
-                buffer[header_size] = (auxPtr.aux_offset >> 5) as u8;
+                buffer[header_size] = (aux_ptr.aux_offset >> 5) as u8;
                 header_size += 1;
                 buffer[header_size] =
-                      ((auxPtr.aux_offset << 3) as u8)
-                    | (auxPtr.aux_phy as u8);
+                      ((aux_ptr.aux_offset << 3) as u8)
+                    | (aux_ptr.aux_phy as u8);
                 header_size += 1;
             }
             None => {}
         }
 
         // (optional) set SyncInfo
-        match self.syncInfo {
-            Some(syncInfo) => {
+        match self.sync_info {
+            Some(_) => {
                 panic!("not implemented");
             }
             None => {}
@@ -411,8 +412,8 @@ impl<'a> AuxAdvExtendedHeader<'a> {
 
         // (optional) set TxPower
         match self.txpower {
-            Some(txpower) => {
-                buffer[header_size] = txpower as u8;
+            Some(tx_power) => {
+                buffer[header_size] = tx_power as u8;
                 header_size += 1;
             }
             None => {}
