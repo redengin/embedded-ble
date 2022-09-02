@@ -11,6 +11,7 @@ edition = "2018"
 version = "0.0.1"
 
 [features]
+nrf5x = [] # generic tag for all nrf5x hardware
 nrf51 =     ["nrf5x", "dep:nrf51-hal"]
 # nrf52805 =  ["nrf5x", "dep:nrf52805-hal"]
 nrf52810 =  ["nrf5x", "dep:nrf52810-hal"]
@@ -18,7 +19,6 @@ nrf52811 =  ["nrf5x", "dep:nrf52811-hal"]
 nrf52832 =  ["nrf5x", "dep:nrf52832-hal"]
 nrf52833 =  ["nrf5x", "dep:nrf52833-hal"]
 nrf52840 =  ["nrf5x", "dep:nrf52840-hal"]
-nrf5x = []
 nrf5x-xxAA-package = []   # nrf5x small, build.rs determines memory
 nrf5x-xxAB-package = []   # nrf5xx large, build.rs determines memory
 default = ["nrf5x-xxAB-package"]
@@ -37,7 +37,7 @@ rtt-target = { version="0.3", features=["cortex-m"] }
 
 # dependencies for the examples
 [dev-dependencies]
-# modify per your target
+# modify per your target (also update Embed.toml)
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 cortex-m-rtic = "1.0"

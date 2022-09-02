@@ -87,7 +87,7 @@ mod app {
     fn ble_advertiser(mut cx: ble_advertiser::Context) {
         cx.shared.ble.lock(|ble| {
             let channel = link_layer::Channel::CH37;
-            assert!(ble.beacon(channel));
+            assert!(ble.advertise(channel, link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND));
         });
         // continue advertisement forever
         ble_advertiser::spawn_after(1.secs()).unwrap();

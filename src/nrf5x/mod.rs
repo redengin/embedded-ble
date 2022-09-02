@@ -59,7 +59,7 @@ impl Nrf5xHci {
         radio.crccnf.write(|w| w
             .skipaddr().skip()  // skip address (only CRC the PDU)
             .len().three());    // CRC32 (3 bytes)
-        radio.crcpoly.write(|w| unsafe{ w.crcpoly().bits(link_layer::BLE_CRC_POLYNOMIAL) });
+        radio.crcpoly.write(|w| unsafe{ w.crcpoly().bits(link_layer::CRC_POLYNOMIAL) });
 
         // configure interframe spacing per BLE spec
         radio.tifs.write(|w| unsafe{ w.tifs().bits(link_layer::T_IFS_US) });

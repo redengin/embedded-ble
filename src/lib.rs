@@ -2,7 +2,11 @@
 
 pub mod link_layer;
 pub mod gap;
-#[cfg(feature="nrf5x")]
+
+// select the hardware interface
+#[cfg(test)]
+use FakeHci as HCI;  /* implemented at end of this file */
+#[cfg(feature="nrf5x")] 
 pub mod nrf5x;
 #[cfg(feature="nrf5x")]
 use nrf5x::{Nrf5xHci as HCI};
@@ -26,35 +30,19 @@ impl<'a> Ble<'a> {
     }
 
     /// send out a BlueTooth non-connectable advertisement
-    pub fn beacon(&self, channel: link_layer::Channel) -> bool {
+    pub fn advertise(&self, channel: link_layer::Channel, pdu_type: link_layer::ADV_PDU_TYPE) -> bool {
         // advertising channels are CH37, CH38, CH39
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
-        let mut buffer:[u8;link_layer::PDU_SIZE_MAX] = [0; link_layer::PDU_SIZE_MAX];
-        let pdu = link_layer::AdvPdu::AdvNonConnInd(&self.hci.adv_a, &self.ad_fields);
-
-        return self.hci.send(
-            channel,
-            link_layer::ADV_ACCESS_ADDRESS,
-            link_layer::ADV_CRCINIT,
-            pdu.write(&mut buffer)
-        )
-    }
-
-    /// send out a BlueTooth connectable advertisement
-    pub fn advertise(&self, channel: link_layer::Channel) -> bool
-    {
-        // advertising channels are CH37, CH38, CH39
-        debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
-
-        let mut buffer:[u8;link_layer::PDU_SIZE_MAX] = [0; link_layer::PDU_SIZE_MAX];
-        let header = link_layer::AuxAdvExtendedHeader{
-            adv_a: Some(&self.hci.adv_a),
-            adi: Some(link_layer::Adi{did: 0, sid: 0}),
-            ..link_layer::AuxAdvExtendedHeader::default()
+        let pdu = match pdu_type {
+                link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND => link_layer::AdvNonConnIndPdu{
+                                                                adv_a: &self.hci.adv_a,
+                                                                adv_data: &self.ad_fields
+                                                            },
+                _ => { panic!("not implemented") }
         };
-        let pdu = link_layer::AdvPdu::AuxAdvInd(&header, &self.ad_fields);
 
+        let mut buffer:[u8; link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
         return self.hci.send(
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
@@ -62,4 +50,13 @@ impl<'a> Ble<'a> {
             pdu.write(&mut buffer)
         )
     }
+}
+
+
+
+pub struct FakeHci {
+    pub adv_a: link_layer::AdvA,
+}
+impl FakeHci {
+    pub fn send(&self, _: link_layer::Channel, _: link_layer::AccessAddress, _: link_layer::CrcInit, _: &[u8]) -> bool { true }
 }
