@@ -1,6 +1,7 @@
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
+pub type PduBuffer = [u8;PDU_SIZE_MAX];
 pub const ADV_PDU_SIZE_MAX:usize = 37;
 
 pub type AccessAddress = u32;

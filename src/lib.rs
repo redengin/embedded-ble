@@ -12,7 +12,7 @@ pub mod nrf5x;
 use nrf5x::{Nrf5xHci as HCI};
 
 pub struct Ble<'a> {
-    hci: HCI,
+    pub hci: HCI,
     ad_fields: gap::AdFields<'a>,
 }
 
@@ -57,10 +57,10 @@ impl<'a> Ble<'a> {
         };
 
         return self.hci.send(
+            pdu_slice,
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
-            pdu_slice
         )
     }
 }

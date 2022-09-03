@@ -1,5 +1,6 @@
 use nrf52832_hal::{pac};
 
+use crate::link_layer::PDU_SIZE_MAX;
 use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
 use pac::{RADIO};
@@ -10,6 +11,7 @@ use rtt_target::{rprintln};
 pub struct Nrf5xHci {
     radio: RADIO,
     pub(crate) adv_a: link_layer::AdvA, // hw address
+    rx_buffer: link_layer::PduBuffer
 }
 
 
@@ -52,8 +54,10 @@ impl Nrf5xHci {
         // enables fast ramp-up
         radio.modecnf0.write(|w| w.ru().set_bit());
 
-        // this driver only transmits using first address entry(0)
+        // https://infocenter.nordicsemi.com/pdf/nRF52832_PS_v1.4.pdf#%5B%7B%22num%22%3A1558%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C56.692%2C512.629%2Cnull%5D
+        // this driver only uses logical address entry 0
         radio.txaddress.write(|w| unsafe{ w.bits(0) });
+        radio.rxaddresses.write(|w| w.addr0().enabled());
 
         // configure for CRC24 per BLE spec
         radio.crccnf.write(|w| w
@@ -73,6 +77,7 @@ impl Nrf5xHci {
         Self{
             radio,
             adv_a : Self::get_address(ficr),
+            rx_buffer: [0;PDU_SIZE_MAX]
         }
     }
 
@@ -87,7 +92,7 @@ impl Nrf5xHci {
         }
     }
 
-    fn set_channel(&self, channel:link_layer::Channel, access_address:u32) {
+    fn set_channel(&self, channel:link_layer::Channel, access_address:link_layer::AccessAddress) {
         // set channel
         self.radio.frequency.write(|w| unsafe{ w.frequency().bits(channel.frequency()) });
         self.radio.datawhiteiv.write(|w| unsafe{ w.datawhiteiv().bits(channel as u8)});
@@ -109,8 +114,8 @@ impl Nrf5xHci {
             (read_volatile(UNDOCUMENTED) & 0xfffffffe) | 0x01000000);
         }
     }
+
     /// set the transmit power
-    /// Core_v5.3.pdf#G37.564979
     pub fn set_txpower(&self, db: i8) {
         self.radio.txpower.write(|w| w.txpower().variant(
             match db {
@@ -126,19 +131,25 @@ impl Nrf5xHci {
         ));
     }
 
-    /// attempts to send a PDU (hardware takes care of preamble, access-address, and CRC)
-    pub(crate) fn send(&self, channel:link_layer::Channel, access_address:u32, crcinit:u32, buffer: &[u8]) -> bool
-    {
-        assert!(buffer.len() < link_layer::PDU_SIZE_MAX);
+    fn is_busy(&self) -> bool {
+        ! self.radio.state.read().state().is_disabled()
+    }
 
-        rprintln!("Sending (hex) {:02X?}", buffer);
+    /// send a PDU (hardware takes care of preamble, access-address, and CRC)
+    pub(crate) fn send(&self,
+                        pdu:&[u8],
+                        channel:link_layer::Channel,
+                        access_address:link_layer::AccessAddress,
+                        crcinit:link_layer::CrcInit) -> bool
+    {
+        assert!(pdu.len() < link_layer::PDU_SIZE_MAX);
+
+        rprintln!("Sending (hex) {:02X?}", pdu);
 
         // abort if the radio is busy
-        if ! self.radio.state.read().state().is_disabled() {
-            return false;
-        }
+        if self.is_busy() { return false; }
 
-        // setup the radio
+        // setup the radio channel
         self.set_channel(channel, access_address);
 
         // TODO support encryption (CCM)
@@ -146,8 +157,8 @@ impl Nrf5xHci {
 
         // initialize the crc value
         self.radio.crcinit.write(|w| unsafe{ w.crcinit().bits(crcinit) });
-        // set the buffer
-        self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
+        // set the hardware buffer
+        self.radio.packetptr.write(|w| unsafe{ w.bits(pdu.as_ptr() as u32) });
 
         // configure radio to automatically disable itself after send
         self.radio.shorts.write(|w| w
@@ -166,4 +177,42 @@ impl Nrf5xHci {
 
         return true
     }
+
+    // pub(crate) fn send(&self, channel:link_layer::Channel, access_address:link_layer::AccessAddress, crcinit:link_layer::CrcInit, pdu: &[u8]) -> bool
+    pub fn listen(&self, channel:link_layer::Channel, access_address:link_layer::AccessAddress) -> bool
+    {
+        // abort if the radio is busy
+        if ! self.radio.state.read().state().is_disabled() {
+            return false;
+        }
+
+        // setup the radio channel
+        self.set_channel(channel, access_address);
+
+        // set the hardware buffer
+        self.radio.packetptr.write(|w| unsafe{ w.bits(self.rx_buffer.as_ptr() as u32) });
+
+        // enable interrupt upon receive
+        self.radio.intenset.write(|w| w.disabled().set());
+
+        // configure radio to automatically disable itself after reception
+        self.radio.shorts.write(|w| w
+            .ready_start().enabled()
+            .end_disable().enabled()
+        );
+
+        // "Preceding reads and writes cannot be moved past subsequent writes."
+        compiler_fence(Ordering::Release);
+
+        // start listening
+        self.radio.tasks_rxen.write(|w| unsafe{ w.bits(1) });
+
+        return true
+    }
+
+    pub fn receive(&self) -> bool
+    {
+        todo!()
+    }
+    
 }

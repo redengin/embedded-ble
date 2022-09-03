@@ -95,23 +95,27 @@ mod app {
                 // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
                 assert!(ble.advertise(channel, link_layer::ADV_PDU_TYPE::ADV_IND));
+
+                // listen for central (scanning and connection PDUs)
+                assert!(ble.hci.listen(channel, link_layer::ADV_ACCESS_ADDRESS));
             }
         });
         // continue advertisement forever
         ble_advertiser::spawn_after(1.secs()).unwrap();
     }
 
-    // schedule for **highest** priority
-    // #[task(binds=RADIO, shared=[ble], priority=8)]
-    // fn ble_handler(mut cx:ble_handler::Context) {
-    //     rprintln!("handling radio event...");
-    //     cx.shared.ble.lock(|ble| {
-    //         let has_work = ble.radio_event();
-    //         if has_work {
-    //             ble_worker::spawn().ok();
-    //         }
-    //     });
-    // }
+    // schedule RADIO for **highest** priority
+    #[task(binds=RADIO, shared=[ble], priority=8)]
+    fn ble_handler(mut cx:ble_handler::Context) {
+        rprintln!("handling radio event...");
+        cx.shared.ble.lock(|ble| {
+            let _pdu = ble.hci.receive();
+            // let has_work = ble.radio_event();
+            // if has_work {
+            //     ble_worker::spawn().ok();
+            // }
+        });
+    }
 
     // schedule for high priority (apps responsive to state changes)
     // #[task(shared=[ble], priority=7)]
