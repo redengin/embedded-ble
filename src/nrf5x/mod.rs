@@ -144,7 +144,7 @@ impl Nrf5xHci {
     {
         assert!(pdu.len() < link_layer::PDU_SIZE_MAX);
 
-        rprintln!("Sending (hex) {:02X?}", pdu);
+        rprintln!("Sending (hex) {:X?}", pdu);
 
         // abort if the radio is busy
         if self.is_busy() { return false; }
@@ -210,9 +210,11 @@ impl Nrf5xHci {
         return true
     }
 
-    pub fn receive(&self) -> bool
+    pub fn receive(&self)
     {
-        todo!()
+        self.radio.events_disabled.reset();
+
+        rprintln!("Received (hex) {:X?}", self.rx_buffer);
     }
     
 }

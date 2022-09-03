@@ -107,9 +107,8 @@ mod app {
     // schedule RADIO for **highest** priority
     #[task(binds=RADIO, shared=[ble], priority=8)]
     fn ble_handler(mut cx:ble_handler::Context) {
-        rprintln!("handling radio event...");
         cx.shared.ble.lock(|ble| {
-            let _pdu = ble.hci.receive();
+            ble.hci.receive();
             // let has_work = ble.radio_event();
             // if has_work {
             //     ble_worker::spawn().ok();
