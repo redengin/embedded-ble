@@ -401,11 +401,11 @@ enum DataTypes {
     ManufacturerSpecificData        = 0xFF,
 }
 
-// /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
-// pub const FLAGS_LE_LIMITED_DISCOVERABLE:u8      = 1 << 0;
-// pub const FLAGS_LE_GENERAL_DISCOVERABLE:u8      = 1 << 1;
-// pub const FLAGS_BR_EDR_NOT_SUPPORTED:u8         = 1 << 2;
-// pub const FLAGS_SIMULTANEOUS_LE_AND_BR_EDR:u8   = 1 << 3;
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
+pub const FLAGS_LE_LIMITED_DISCOVERABLE:u8      = 1 << 0;
+pub const FLAGS_LE_GENERAL_DISCOVERABLE:u8      = 1 << 1;
+pub const FLAGS_BR_EDR_NOT_SUPPORTED:u8         = 1 << 2;
+pub const FLAGS_SIMULTANEOUS_LE_AND_BR_EDR:u8   = 1 << 3;
 
 // /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
 // type LeBluetoothDeviceAddress = [u8;7];

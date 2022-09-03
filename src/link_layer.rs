@@ -5,6 +5,19 @@
 pub const PDU_SIZE_MAX:usize = 255;
 pub const ADV_PDU_SIZE_MAX:usize = 37;
 
+pub type AccessAddress = u32;
+/// Core_v5.3.pdf#G41.455603
+pub const ADV_ACCESS_ADDRESS:AccessAddress = 0x8E89BED6_u32.to_le();
+pub type CrcInit = u32;
+/// Core_v5.3.pdf#G41.453964
+pub const ADV_CRCINIT:CrcInit = 0x555555;
+
+/// Core_v5.3.pdf#G41.453964
+pub const CRC_POLYNOMIAL:u32 = 0x65B;
+/// Core_v5.3.pdf#G41.699341  (Inter Frame Space 150us)
+pub const T_IFS_US:u8 = 150;
+
+
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.455772
 #[derive(Copy, Clone, PartialEq)]
@@ -46,7 +59,6 @@ pub enum ADV_PDU_TYPE {
     ADV_SCAN_IND    = 0b0110,   // Scannable Undirected advertising
     ADV_EXT_IND     = 0b0111,   // aka AUX_ADV_IND, AUX_SCAN_RSP, AUX_SYNC_IND, AUX_CHAIN_IND
 }
-
 
 pub(crate) type Address = [u8;6];
 pub enum TxRxAdvAddress {
@@ -106,6 +118,51 @@ impl<'a> AdvNonConnIndPdu<'a> {
         &buffer[0..pdu_size]
     }
 }
+
+
+///Core_v5.3.pdf#G41.783004
+pub enum ChSel {
+    Unsupported = 0,
+    Supported = 1,
+}
+pub struct AdvIndPdu<'a> {
+    pub ch_sel: ChSel,
+    pub adv_a: &'a AdvA,
+    pub adv_data: &'a AdvData<'a>,
+}
+impl<'a> AdvIndPdu<'a> {
+    /// returns the used slice of the destination buffer
+    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8] {
+        let mut pdu_size = 0;
+
+        const TYPE_SHIFT:usize = 0;
+        const CHSEL_SHIFT:usize = 5;
+        const TXADD_SHIFT:usize = 6;
+        buffer[0] = // base pdu type
+                    ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
+                    // chSel bit
+                    | (match self.ch_sel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
+                    // txadd bit
+                    | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
+        pdu_size += 1;
+        
+        // skip a byte for length (will be set at end)
+        pdu_size += 1;
+
+        // write the AdvA
+        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+
+        // append the adv_data
+        pdu_size += self.adv_data.write(&mut buffer[pdu_size..]);
+
+        // set the length
+        const PDU_HEADER_SIZE:usize = 2;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
+
+        &buffer[0..pdu_size]
+    }
+}
+
 // pub enum AdvPdu<'a> {
 //     AdvInd(ChSel, &'a AdvA, &'a AdvData<'a>),
 //     AdvDirectInd(ChSel, &'a AdvA, &'a TargetA),
@@ -117,27 +174,6 @@ impl<'a> AdvNonConnIndPdu<'a> {
 //     // ScanReq(&'a ScanA, &'a AdvA, &'a AdFields<'a>),
 //     // ScanRsp(&'a AdvA, &'a AdFields<'a>),
 //     // AuxAdvInd()
-// }
-
-
-
-pub type AccessAddress = u32;
-/// Core_v5.3.pdf#G41.455603
-pub const ADV_ACCESS_ADDRESS:AccessAddress = 0x8E89BED6_u32.to_le();
-pub type CrcInit = u32;
-/// Core_v5.3.pdf#G41.453964
-pub const ADV_CRCINIT:CrcInit = 0x555555;
-
-/// Core_v5.3.pdf#G41.453964
-pub const CRC_POLYNOMIAL:u32 = 0x65B;
-/// Core_v5.3.pdf#G41.699341  (Inter Frame Space 150us)
-pub const T_IFS_US:u8 = 150;
-
-
-// ///Core_v5.3.pdf#G41.783004
-// pub enum ChSel {
-//     Supported,
-//     Unsupported,
 // }
 
 // #[derive(Default)]

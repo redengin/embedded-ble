@@ -26,6 +26,7 @@ impl<'a> Ble<'a> {
     }
 
     pub fn is_connected(&self) -> bool {
+        // FIXME
         return false;
     }
 
@@ -34,20 +35,32 @@ impl<'a> Ble<'a> {
         // advertising channels are CH37, CH38, CH39
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
-        let pdu = match pdu_type {
-                link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND => link_layer::AdvNonConnIndPdu{
-                                                                adv_a: &self.hci.adv_a,
-                                                                adv_data: &self.ad_fields
-                                                            },
-                _ => { panic!("not implemented") }
+        let mut buffer:[u8; link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
+        let pdu_buffer= match pdu_type {
+
+            link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND => {
+                    let pdu =
+                            link_layer::AdvNonConnIndPdu{adv_a: &self.hci.adv_a,
+                                                         adv_data: &self.ad_fields};
+                    pdu.write(&mut buffer)
+            }
+
+            link_layer::ADV_PDU_TYPE::ADV_IND => {
+                let pdu =
+                        link_layer::AdvIndPdu{ch_sel: link_layer::ChSel::Unsupported,
+                                              adv_a: &self.hci.adv_a,
+                                              adv_data: &self.ad_fields};
+                pdu.write(&mut buffer)
+            }
+
+            _ => { panic!("not implemented") }
         };
 
-        let mut buffer:[u8; link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
         return self.hci.send(
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
-            pdu.write(&mut buffer)
+            pdu_buffer
         )
     }
 }

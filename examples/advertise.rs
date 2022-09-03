@@ -61,7 +61,7 @@ mod app {
         let hci = HCI::Nrf5xHci::new(cx.device.RADIO, HCI::RadioMode::Ble1Mbit, cx.device.FICR);
 
         // create the BLE instance
-        let info = gap::AdFields { local_name: Some("Beacon Demo"), ..gap::AdFields::default() };
+        let info = gap::AdFields { local_name: Some("Advertise Demo"), ..gap::AdFields::default() };
         let ble = Ble::new(hci, info);
 
         // upon rtic start, begin advertising
