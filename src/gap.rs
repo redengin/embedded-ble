@@ -1,3 +1,23 @@
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
+pub const FLAGS_LE_LIMITED_DISCOVERABLE:u8      = 1 << 0;
+pub const FLAGS_LE_GENERAL_DISCOVERABLE:u8      = 1 << 1;
+pub const FLAGS_BR_EDR_NOT_SUPPORTED:u8         = 1 << 2;
+pub const FLAGS_SIMULTANEOUS_LE_AND_BR_EDR:u8   = 1 << 3;
+
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
+type LeBluetoothDeviceAddress = [u8;7];
+
+/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005585
+#[derive(Copy, Clone)]
+pub enum LeRole {
+    OnlyPeripheralRole                  = 0x00,
+    OnlyCentralRole                     = 0x01,
+    /// peripheral role preferred
+    PeripheralAndCentralRolePeripheral  = 0x02,
+    /// central role preferred
+    PeripheralAndCentralRoleCentral     = 0x03,
+}
+
 
 #[derive(Default)]
 /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1070566
@@ -25,27 +45,27 @@ pub struct AdFields<'a> {
     pub tx_power_level: Option<i8>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999709
-    // TODO SECURE SIMPLE PAIRING OUT OF BAND
+    // TODO implement
     pub _secure_simple_pairing_oob: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999768
-    // TODO SECURITY MANAGER OUT OF BAND
+    // TODO implement
     pub _security_manager_oob: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999818
-    // TODO SECURITY MANAGER TK VALUE
+    // TODO implement
     pub _security_manager_tk_value: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999838
-    // TODO PERIPHERAL CONNECTION INTERVAL RANGE
+    // TODO implement
     pub _peripheral_connection_interval_range: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999871
-    // TODO SERVICE SOLICITATION
+    // TODO implement
     pub _service_solicitation: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999894
-    // TODO SERVICE DATA
+    // TODO implement
     pub _service_data: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999913
@@ -53,42 +73,40 @@ pub struct AdFields<'a> {
     pub appearance: Option<u16>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999932
-    // TODO PUBLIC TARGET ADDRESS
+    // TODO implement
     pub _public_target_address: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999953
-    // TODO RANDOM TARGET ADDRESS
+    // TODO implement
     pub _random_target_address:u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1004048
-    // TODO ADVERTISING INTERVAL
+    // TODO implement
     pub _advertising_interval:u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005265
-    // FIXME pub le_bluetooth_device_address: Option<&'a LeBluetoothDeviceAddress>,
-    pub le_bluetooth_device_address: Option<i8>,
+    pub le_bluetooth_device_address: Option<&'a LeBluetoothDeviceAddress>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005342
-    // FIXME pub le_role: Option<LeRole>,
-    pub le_role: Option<i8>,
+    pub le_role: Option<LeRole>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005559
     pub uri: Option<&'a str>,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1054608
-    // TODO LE SUPPORTED FEATURES
+    // TODO implement
     pub _le_supported_features: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1055008
-    // TODO CHANNEL MAP UPDATE INDICATION
+    // TODO implement
     pub _channel_map_update_indication: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1176955
-    // TODO BIGINFO
+    // TODO implement
     pub _biginfo: u8,
 
     /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1177011
-    // TODO BROADCAST_CODE
+    // TODO implement
     pub _broadcast_code: u8,
 }
 
@@ -103,7 +121,7 @@ impl<'a> AdFields<'a> {
         const AD_TYPE_SIZE:usize = 1;
         const PDU_ADV_STRUCTURE_LENGTH_SIZE:usize = 1;
 
-        // add incomplete service uuid 16 list
+        // append incomplete service uuid 16 list
         match self.incomplete_list_service_uuid_16 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
                 // set ad structure length
@@ -120,7 +138,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add complete service uuid 16 list
+        // append complete service uuid 16 list
         match self.complete_list_service_uuid_16 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * uuids.len())) {
                 // set ad structure length
@@ -137,7 +155,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add incomplete service uuid 32 list
+        // append incomplete service uuid 32 list
         match self.incomplete_list_service_uuid_32 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
                 // set ad structure length
@@ -154,7 +172,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add complete service uuid 32 list
+        // append complete service uuid 32 list
         match self.complete_list_service_uuid_32 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * uuids.len())) {
                 // set ad structure length
@@ -171,7 +189,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add incomplete service uuid 128 list
+        // append incomplete service uuid 128 list
         match self.incomplete_list_service_uuid_128 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
                 // set ad structure length
@@ -188,7 +206,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add complete service uuid 128 list
+        // append complete service uuid 128 list
         match self.complete_list_service_uuid_128 {
             Some(uuids) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * uuids.len())) {
                 // set ad structure length
@@ -206,7 +224,7 @@ impl<'a> AdFields<'a> {
             None => {}
         }
 
-        // add local_name
+        // append local_name
         match self.local_name {
             Some(name) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
                 // set ad structure length
@@ -221,7 +239,7 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add short_name
+        // append short_name
         match self.short_name {
             Some(name) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()) {
                 // set ad structure length
@@ -236,7 +254,8 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add flags
+
+        // append flags
         match self.flags {
             Some(flags) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
@@ -251,7 +270,8 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add manufacturer data
+
+        // append manufacturer data
         match self.manufacturer_specific_data {
             Some(data) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + data.len()) {
                 // manufacturer data must have 2 byte company identifier to be valid
@@ -268,7 +288,8 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add tx_power_level
+
+        // append tx_power_level
         match self.tx_power_level {
             Some(level) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
@@ -283,7 +304,8 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add appearance
+
+        // append appearance
         match self.appearance {
             Some(id) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2) {
                 // set ad structure length
@@ -298,23 +320,24 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add le device address
-        // FIXME
-        // match self.le_bluetooth_device_address {
-        //     Some(address) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + address.len()) {
-        //         // set ad structure length
-        //         buffer[ad_size] = (AD_TYPE_SIZE + address.len()) as u8;
-        //         ad_size += 1;
-        //         // set ad structure type
-        //         buffer[ad_size] = DataTypes::LeBluetoothDeviceAddress as u8;
-        //         ad_size += 1;
-        //         // set ad structure payload
-        //         buffer[ad_size..(ad_size + address.len())].copy_from_slice(address);
-        //         ad_size += address.len();
-        //     }
-        //     None => {}
-        // }
-        // add le role
+
+        // append le device address
+        match self.le_bluetooth_device_address {
+            Some(address) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + address.len()) {
+                // set ad structure length
+                buffer[ad_size] = (AD_TYPE_SIZE + address.len()) as u8;
+                ad_size += 1;
+                // set ad structure type
+                buffer[ad_size] = DataTypes::LeBluetoothDeviceAddress as u8;
+                ad_size += 1;
+                // set ad structure payload
+                buffer[ad_size..(ad_size + address.len())].copy_from_slice(address);
+                ad_size += address.len();
+            }
+            None => {}
+        }
+
+        // append le role
         match self.le_role{
             Some(role) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1) {
                 // set ad structure length
@@ -329,7 +352,8 @@ impl<'a> AdFields<'a> {
             }
             None => {}
         }
-        // add uri
+
+        // append uri
         match self.uri {
             Some(uri) => if buffer.len() >= (ad_size + PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()) {
                 // set ad structure length
@@ -401,206 +425,186 @@ enum DataTypes {
     ManufacturerSpecificData        = 0xFF,
 }
 
-/// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.999589
-pub const FLAGS_LE_LIMITED_DISCOVERABLE:u8      = 1 << 0;
-pub const FLAGS_LE_GENERAL_DISCOVERABLE:u8      = 1 << 1;
-pub const FLAGS_BR_EDR_NOT_SUPPORTED:u8         = 1 << 2;
-pub const FLAGS_SIMULTANEOUS_LE_AND_BR_EDR:u8   = 1 << 3;
 
-// /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005365
-// type LeBluetoothDeviceAddress = [u8;7];
 
-// /// https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976#G3.1005585
-// #[derive(Copy, Clone)]
-// pub enum LeRole {
-//     OnlyPeripheralRole                  = 0x00,
-//     OnlyCentralRole                     = 0x01,
-//     /// peripheral role preferred
-//     PeripheralAndCentralRolePeripheral  = 0x02,
-//     /// central role preferred
-//     PeripheralAndCentralRoleCentral     = 0x03,
-// }
+// ------------------------TESTS--------------------------------------
 
-// #[cfg(test)]
-// mod adfields_write {
-//     use crate::link_layer;
+#[cfg(test)]
+mod adfields_write {
+    use super::*;
 
-//     use super::*;
+    use crate::link_layer::{ADV_PDU_SIZE_MAX};
+    const PDU_ADV_STRUCTURE_LENGTH_SIZE:usize = 1;  // one octet for size of adv structure
+    const AD_TYPE_SIZE:usize = 1; // BLE specification is ambiguous, but current standard only supports this
 
-//     const ADV_PDU_SIZE_MAX:usize = link_layer::PDU_SIZE_MAX;
-//     const AD_TYPE_SIZE:usize = 1; // BLE specification is ambiguous, but current standard only supports this
-
-//     #[test]
-//     fn incomplete_list_service_uuid_16() {
-//         let service_uuids:[u16;1] = [0xA55A];
-//         let ad_fields = AdFields{ incomplete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Incomplete16bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn complete_list_service_uuid_16() {
-//         let service_uuids:[u16;1] = [0xA55A];
-//         let ad_fields = AdFields{ complete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Complete16bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn incomplete_list_service_uuid_32() {
-//         let service_uuids:[u32;1] = [0xA55A5AA5];
-//         let ad_fields = AdFields{ incomplete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Incomplete32bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn complete_list_service_uuid_32() {
-//         let service_uuids:[u32;1] = [0xA55A5AA5];
-//         let ad_fields = AdFields{ complete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Complete32bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn incomplete_list_service_uuid_128() {
-//         let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
-//         let ad_fields = AdFields{ incomplete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Incomplete128bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn complete_list_service_uuid_128() {
-//         let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
-//         let ad_fields = AdFields{ complete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Complete128bitServiceUuids as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(service_uuids[0].to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn local_complete_name() {
-//         let name = "LOCAL NAME";
-//         let ad_fields = AdFields{ local_name:Some(name), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::CompleteLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn local_short_name() {
-//         let name = "LOCAL NAME";
-//         let ad_fields = AdFields{ short_name:Some(name), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::ShortenedLocalName as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(*name.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn flags() {
-//         let flags = 0xa5;
-//         let ad_fields = AdFields{ flags:Some(flags), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Flags as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(flags as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
-//     }
-//     #[test]
-//     fn manufacturer_specific_data() {
-//         let data:[u8;2] = [0; 2];
-//         let ad_fields = AdFields{ manufacturer_specific_data:Some(&data), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::ManufacturerSpecificData as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(data, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn tx_power_level() {
-//         let tx_power_level = 0;
-//         let ad_fields = AdFields{ tx_power_level:Some(tx_power_level), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::TxPowerLevel as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(tx_power_level, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE] as i8);
-//     }
-//     #[test]
-//     fn appearance() {
-//         let appearance = 0xA5;
-//         let ad_fields = AdFields{ appearance:Some(appearance), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 2), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Appearance as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(appearance.to_le_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn le_bluetooth_device_address() {
-//         let le_bluetooth_device_address:LeBluetoothDeviceAddress = [0;7];
-//         let ad_fields = AdFields{ le_bluetooth_device_address:Some(&le_bluetooth_device_address), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + le_bluetooth_device_address.len()), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::LeBluetoothDeviceAddress as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(le_bluetooth_device_address, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn le_role() {
-//         let le_role = LeRole::OnlyCentralRole;
-//         let ad_fields = AdFields{ le_role:Some(le_role), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + 1), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::LeRole as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(le_role as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
-//     }
-//     #[test]
-//     fn uri() {
-//         let uri = "URI";
-//         let ad_fields = AdFields{ uri:Some(uri), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), adv_data.len());
-//         assert_eq!((adv_data.len() - 1), adv_data[0] as usize);
-//         assert_eq!(DataTypes::Uri as u8, adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
-//         assert_eq!(*uri.as_bytes(), adv_data[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..]);
-//     }
-//     #[test]
-//     fn multiple_fields() {
-//         let name = "concat";
-//         let ad_fields = AdFields{ local_name:Some(name), uri:Some(name), ..AdFields::default() };
-//         let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
-//         let adv_data= ad_fields.write(&mut buffer);
-//         assert_eq!(2 * (PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), adv_data.len());
-//     }
-// }
+    #[test]
+    fn incomplete_list_service_uuid_16() {
+        let service_uuids:[u16;1] = [0xA55A];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Incomplete16bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn complete_list_service_uuid_16() {
+        let service_uuids:[u16;1] = [0xA55A];
+        let ad_fields = AdFields{ complete_list_service_uuid_16:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (2 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Complete16bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn incomplete_list_service_uuid_32() {
+        let service_uuids:[u32;1] = [0xA55A5AA5];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Incomplete32bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn complete_list_service_uuid_32() {
+        let service_uuids:[u32;1] = [0xA55A5AA5];
+        let ad_fields = AdFields{ complete_list_service_uuid_32:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (4 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Complete32bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn incomplete_list_service_uuid_128() {
+        let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
+        let ad_fields = AdFields{ incomplete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Incomplete128bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn complete_list_service_uuid_128() {
+        let service_uuids:[u128;1] = [0xA55A5AA5A55A5AA5];
+        let ad_fields = AdFields{ complete_list_service_uuid_128:Some(&service_uuids), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + (16 * service_uuids.len())), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Complete128bitServiceUuids as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(service_uuids[0].to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn local_complete_name() {
+        let name = "LOCAL NAME";
+        let ad_fields = AdFields{ local_name:Some(name), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::CompleteLocalName as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(*name.as_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn local_short_name() {
+        let name = "LOCAL NAME";
+        let ad_fields = AdFields{ short_name:Some(name), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + name.len()), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::ShortenedLocalName as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(*name.as_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn flags() {
+        let flags = 0xa5;
+        let ad_fields = AdFields{ flags:Some(flags), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        const AD_FIELD_SIZE:usize = 1;
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + AD_FIELD_SIZE), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Flags as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(flags, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
+    }
+    #[test]
+    fn manufacturer_specific_data() {
+        let data:[u8;2] = [0; 2];
+        let ad_fields = AdFields{ manufacturer_specific_data:Some(&data), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        const AD_FIELD_SIZE:usize = 2;
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + AD_FIELD_SIZE), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::ManufacturerSpecificData as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(data, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn tx_power_level() {
+        let tx_power_level = 0;
+        let ad_fields = AdFields{ tx_power_level:Some(tx_power_level), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        const AD_FIELD_SIZE:usize = 1;
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + AD_FIELD_SIZE), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::TxPowerLevel as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(tx_power_level, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE] as i8);
+    }
+    #[test]
+    fn appearance() {
+        let appearance = 0xA5;
+        let ad_fields = AdFields{ appearance:Some(appearance), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        const AD_FIELD_SIZE:usize = 2;
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + AD_FIELD_SIZE), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Appearance as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(appearance.to_le_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn le_bluetooth_device_address() {
+        let address:LeBluetoothDeviceAddress = [0;7];
+        let ad_fields = AdFields{ le_bluetooth_device_address:Some(&address), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + address.len()), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::LeBluetoothDeviceAddress as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(address, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+    #[test]
+    fn le_role() {
+        let le_role = LeRole::OnlyCentralRole;
+        let ad_fields = AdFields{ le_role:Some(le_role), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        const AD_FIELD_SIZE:usize = 1;
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + AD_FIELD_SIZE), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::LeRole as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(le_role as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE]);
+    }
+    #[test]
+    fn uri() {
+        let uri = "URI";
+        let ad_fields = AdFields{ uri:Some(uri), ..AdFields::default() };
+        let mut buffer:[u8; ADV_PDU_SIZE_MAX] = [0; ADV_PDU_SIZE_MAX];
+        let size = ad_fields.write(&mut buffer);
+        assert_eq!((PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE + uri.len()), size);
+        assert_eq!((size - PDU_ADV_STRUCTURE_LENGTH_SIZE), buffer[0] as usize);
+        assert_eq!(DataTypes::Uri as u8, buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE]);
+        assert_eq!(*uri.as_bytes(), buffer[PDU_ADV_STRUCTURE_LENGTH_SIZE + AD_TYPE_SIZE..size]);
+    }
+}

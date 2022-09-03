@@ -1,5 +1,3 @@
-// use crate::{gap::AdFields};
-
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
@@ -17,7 +15,6 @@ pub const CRC_POLYNOMIAL:u32 = 0x65B;
 /// Core_v5.3.pdf#G41.699341  (Inter Frame Space 150us)
 pub const T_IFS_US:u8 = 150;
 
-
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.455772
 #[derive(Copy, Clone, PartialEq)]
@@ -33,10 +30,10 @@ impl Channel {
     pub fn frequency(&self) -> u8 {
         /// actual frequency (MHz) = 2400 + value
         const FREQUENCIES:[u8;40] = [
-            4,  6,  8,  10, 12, 14, 16, 18, 20, 22, /* 0-9 */
-            24, 28, 30, 32, 34, 36, 38, 40, 42, 44, /* 10-19 */
-            46, 48, 50, 52, 54, 56, 58, 60, 62, 64, /* 20-29 */
-            66, 68, 70, 72, 74, 76, 78, 2,  26, 80  /* 30-39 */
+            4,  6,  8,  10, 12, 14, 16, 18, 20, 22, /* channels 0-9 */
+            24, 28, 30, 32, 34, 36, 38, 40, 42, 44, /* channels 10-19 */
+            46, 48, 50, 52, 54, 56, 58, 60, 62, 64, /* channels 20-29 */
+            66, 68, 70, 72, 74, 76, 78, 2,  26, 80  /* channels 30-39 */
         ];
         return FREQUENCIES[*self as usize];
     }
@@ -162,6 +159,16 @@ impl<'a> AdvIndPdu<'a> {
         &buffer[0..pdu_size]
     }
 }
+
+
+
+
+
+
+
+
+
+
 
 // pub enum AdvPdu<'a> {
 //     AdvInd(ChSel, &'a AdvA, &'a AdvData<'a>),

@@ -36,7 +36,7 @@ impl<'a> Ble<'a> {
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
         let mut buffer:[u8; link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
-        let pdu_buffer= match pdu_type {
+        let pdu_slice= match pdu_type {
 
             link_layer::ADV_PDU_TYPE::ADV_NONCONN_IND => {
                     let pdu =
@@ -60,7 +60,7 @@ impl<'a> Ble<'a> {
             channel,
             link_layer::ADV_ACCESS_ADDRESS,
             link_layer::ADV_CRCINIT,
-            pdu_buffer
+            pdu_slice
         )
     }
 }
