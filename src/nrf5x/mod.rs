@@ -1,6 +1,5 @@
 use nrf52832_hal::{pac};
 
-use crate::link_layer::PDU_SIZE_MAX;
 use crate::{link_layer};
 use pac::{FICR, ficr::deviceaddrtype::DEVICEADDRTYPE_A};
 use pac::{RADIO};
@@ -11,7 +10,6 @@ use rtt_target::{rprintln};
 pub struct Nrf5xHci {
     radio: RADIO,
     pub(crate) adv_a: link_layer::AdvA, // hw address
-    rx_buffer: link_layer::PduBuffer
 }
 
 
@@ -77,7 +75,6 @@ impl Nrf5xHci {
         Self{
             radio,
             adv_a : Self::get_address(ficr),
-            rx_buffer: [0;PDU_SIZE_MAX]
         }
     }
 
@@ -178,8 +175,11 @@ impl Nrf5xHci {
         return true
     }
 
-    // pub(crate) fn send(&self, channel:link_layer::Channel, access_address:link_layer::AccessAddress, crcinit:link_layer::CrcInit, pdu: &[u8]) -> bool
-    pub fn listen(&self, channel:link_layer::Channel, access_address:link_layer::AccessAddress) -> bool
+    /// begin listening for a PDU
+    pub fn listen(&self,
+                  buffer:&mut link_layer::PduBuffer,
+                  channel:link_layer::Channel,
+                  access_address:link_layer::AccessAddress) -> bool
     {
         // abort if the radio is busy
         if ! self.radio.state.read().state().is_disabled() {
@@ -190,7 +190,7 @@ impl Nrf5xHci {
         self.set_channel(channel, access_address);
 
         // set the hardware buffer
-        self.radio.packetptr.write(|w| unsafe{ w.bits(self.rx_buffer.as_ptr() as u32) });
+        self.radio.packetptr.write(|w| unsafe{ w.bits(buffer.as_ptr() as u32) });
 
         // enable interrupt upon receive
         self.radio.intenset.write(|w| w.disabled().set());
@@ -210,11 +210,6 @@ impl Nrf5xHci {
         return true
     }
 
-    pub fn receive(&self)
-    {
-        self.radio.events_disabled.reset();
-
-        rprintln!("Received (hex) {:X?}", self.rx_buffer);
-    }
-    
+    /// clear the interrupt flag
+    pub fn handle_receive(&self) { self.radio.events_disabled.reset(); }
 }

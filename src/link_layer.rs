@@ -42,20 +42,45 @@ impl Channel {
 
 /// Core_v5.3.pdf#G41.403922
 #[allow(non_camel_case_types)]
-pub enum ADV_PDU_TYPE {
-    ADV_IND         = 0b0000,   // Connectable Scannable Undirected advertising
-    ADV_DIRECT_IND  = 0b0001,   // Connectable Directed advertising
-    ADV_NONCONN_IND = 0b0010,   // Non-Connectable Non-Scannable Undirected advertising
-    // Scanning: enables devices to broadcast more advertising data than is allowed in a single advertising packet.
-    SCAN_REQ        = 0b0011,   // aka AUX_SCAN_REQ
+pub enum PDU_TYPE {
+// Advertising - sent by the Link Layer in the Advertising state and received by a Link Layer in the Scanning state or Initiating stat
+    /// Connectable Scannable Undirected advertising
+    ADV_IND         = 0b0000,
+    /// Connectable Directed advertising
+    ADV_DIRECT_IND  = 0b0001,
+    /// Non-Connectable Non-Scannable Undirected advertising
+    ADV_NONCONN_IND = 0b0010,
+    /// Scannable Undirected advertising 
+    ADV_SCAN_IND    = 0b0110,
+    /// aka AUX_ADV_IND, AUX_SYNC_IND, AUX_CHAIN_IND (also used for AUX_SCAN_RSP during scanning)
+    ADV_EXT_IND     = 0b0111,
+// Scanning - enables devices to broadcast more advertising data than is allowed in a single advertising packet.
+    /// aka AUX_SCAN_REQ
+    SCAN_REQ        = 0b0011,
+    /// aka AUX_SCAN_RSP
     SCAN_RSP        = 0b0100,
-    // Initiating: establishing a connection between a peripheral device and a central device
-    CONNECT_IND     = 0b0101,   // connection request packet
-                                // aka AUX_CONNECT_REQ
-    AUX_CONNECT_RSP = 0b1000,   // connection response packet
-    // TODO what is this?
-    ADV_SCAN_IND    = 0b0110,   // Scannable Undirected advertising
-    ADV_EXT_IND     = 0b0111,   // aka AUX_ADV_IND, AUX_SCAN_RSP, AUX_SYNC_IND, AUX_CHAIN_IND
+// Initiating - establishing a connection between a peripheral device and a central device
+    /// connection request (aka AUX_CONNECT_REQ)
+    CONNECT_IND     = 0b0101,
+    /// connection request response
+    AUX_CONNECT_RSP = 0b1000,
+}
+impl PDU_TYPE {
+    /// return the type of a PDU
+    pub(crate) fn pdu_type(pdu: &[u8]) -> Option<PDU_TYPE> {
+        const PDU_TYPE_MASK:u8 = 0b1111;
+        let pdu_type = pdu[0] & PDU_TYPE_MASK;
+        if pdu_type == (PDU_TYPE::ADV_IND as u8) { Some(PDU_TYPE::ADV_IND) }
+        else if pdu_type == (PDU_TYPE::ADV_DIRECT_IND as u8) { Some(PDU_TYPE::ADV_DIRECT_IND) }
+        else if pdu_type == (PDU_TYPE::ADV_NONCONN_IND as u8) { Some(PDU_TYPE::ADV_NONCONN_IND) }
+        else if pdu_type == (PDU_TYPE::ADV_SCAN_IND as u8) { Some(PDU_TYPE::ADV_SCAN_IND) }
+        else if pdu_type == (PDU_TYPE::ADV_EXT_IND as u8) { Some(PDU_TYPE::ADV_EXT_IND) }
+        else if pdu_type == (PDU_TYPE::SCAN_REQ as u8) { Some(PDU_TYPE::SCAN_REQ) }
+        else if pdu_type == (PDU_TYPE::SCAN_RSP as u8) { Some(PDU_TYPE::SCAN_RSP) }
+        else if pdu_type == (PDU_TYPE::CONNECT_IND as u8) { Some(PDU_TYPE::CONNECT_IND) }
+        else if pdu_type == (PDU_TYPE::AUX_CONNECT_RSP as u8) { Some(PDU_TYPE::AUX_CONNECT_RSP) }
+        else { None }
+    }
 }
 
 pub(crate) type Address = [u8;6];
@@ -95,7 +120,7 @@ impl<'a> AdvNonConnIndPdu<'a> {
         const TYPE_SHIFT:usize = 0;
         const TXADD_SHIFT:usize = 6;
         buffer[0] = // base pdu type
-                    ((ADV_PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
+                    ((PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
                     // txadd bit
                     | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
         pdu_size += 1;
@@ -137,7 +162,7 @@ impl<'a> AdvIndPdu<'a> {
         const CHSEL_SHIFT:usize = 5;
         const TXADD_SHIFT:usize = 6;
         buffer[0] = // base pdu type
-                    ((ADV_PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
+                    ((PDU_TYPE::ADV_IND as u8) << TYPE_SHIFT)
                     // chSel bit
                     | (match self.ch_sel { ChSel::Supported => 1, _ => 0 } << CHSEL_SHIFT)
                     // txadd bit

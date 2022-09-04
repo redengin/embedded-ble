@@ -94,21 +94,21 @@ mod app {
             if ! ble.is_connected() {
                 // TODO advertise on CH38 and CH39
                 let channel = link_layer::Channel::CH37;
-                assert!(ble.advertise(channel, link_layer::ADV_PDU_TYPE::ADV_IND));
+                assert!(ble.advertise(channel, link_layer::PDU_TYPE::ADV_IND));
 
                 // listen for central (scanning and connection PDUs)
-                assert!(ble.hci.listen(channel, link_layer::ADV_ACCESS_ADDRESS));
+                assert!(ble.listen(channel, link_layer::ADV_ACCESS_ADDRESS));
             }
         });
         // continue advertisement forever
-        ble_advertiser::spawn_after(1.secs()).unwrap();
+        ble_advertiser::spawn_after(5.secs()).unwrap();
     }
 
     // schedule RADIO for **highest** priority
     #[task(binds=RADIO, shared=[ble], priority=8)]
     fn ble_handler(mut cx:ble_handler::Context) {
         cx.shared.ble.lock(|ble| {
-            ble.hci.receive();
+            ble.handle_packet();
             // let has_work = ble.radio_event();
             // if has_work {
             //     ble_worker::spawn().ok();

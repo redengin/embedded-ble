@@ -1,0 +1,19 @@
+
+
+Sending (hex)  [40, 14, 8, AA, 83, 74, 2, C9, A, 9, 47, 41, 54, 54, 20, 44, 65, 6D, 6F, 2, 1, 6]                                                     
+                        | AdvA              | ^ Length
+                                                 ^ Name
+                                                    | Advertise Demo                  |    ^ Flags
+
+Received (hex) [C3, C, 47, E9, 61, 7, DA, 6C, 8, AA, 83, 74, 2, C9]
+                ^ ScanReq
+                    ^ Length
+                       |ScanA               | AdvA                |
+
+Received (hex) [42, 25, A4, 13, 7C, 5A, 92, 37, 1E, FF, 6, 0, 1, 9, 20, 2, 23, 3C, E, 57, C1, D8, 16, 0, A7, E4, 44, 55, 49, 8B, B0, 17, FA, 81, A9, 6E, 7F, C5, B2]
+                ^ NonConnectableInd
+                    ^ Length
+                        | AdvA                | ^ Length
+                                                    ^ Manufacturer Specific Data
+                                                        |                                                                                                          |
+
