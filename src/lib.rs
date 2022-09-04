@@ -85,7 +85,7 @@ impl<'a> Ble<'a> {
             Some(pdu_type) => match pdu_type {
                 _ => rprintln!("Unhandled PDU (hex) {:X?}", self.buffer),
             }
-            None => debug_assert!(false, "Unknown PDU (hex) {:X?}", self.buffer)
+            None => debug_assert!(false, "NonStandad PDU (hex) {:X?}", self.buffer)
         }
     }
 }
