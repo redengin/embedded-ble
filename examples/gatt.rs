@@ -101,7 +101,7 @@ mod app {
             }
         });
         // continue advertisement forever
-        ble_advertiser::spawn_after(1.secs()).unwrap();
+        ble_advertiser::spawn_after(3.secs()).unwrap();
     }
 
     // schedule RADIO for **highest** priority

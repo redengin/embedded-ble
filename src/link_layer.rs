@@ -1,4 +1,4 @@
-use num_enum::TryFromPrimitive;
+use num_enum::{TryFromPrimitive};
 use core::convert::TryFrom;
 
 /// Core_v5.3.pdf#G41.405690
@@ -19,14 +19,18 @@ pub const CRC_POLYNOMIAL:u32 = 0x65B;
 /// Core_v5.3.pdf#G41.699341  (Inter Frame Space 150us)
 pub const T_IFS_US:u8 = 150;
 
+#[derive(TryFromPrimitive)]
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq)]
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.455772
-#[derive(Copy, Clone, PartialEq)]
 pub enum Channel {
     CH0,  CH1,  CH2,  CH3,  CH4,  CH5,  CH6,  CH7,  CH8,  CH9,
     CH10, CH11, CH12, CH13, CH14, CH15, CH16, CH17, CH18, CH19,
     CH20, CH21, CH22, CH23, CH24, CH25, CH26, CH27, CH28, CH29,
-    CH30, CH31, CH32, CH33, CH34, CH35, CH36, CH37, CH38, CH39
+    CH30, CH31, CH32, CH33, CH34, CH35, CH36,
+    // advertising channels
+    CH37, CH38, CH39
 }
 /// https://www.rfwireless-world.com/Terminology/BLE-Advertising-channels-and-Data-channels-list.html
 /// Core_v5.3.pdf#G41.403618
@@ -81,6 +85,12 @@ impl PDU_TYPE {
     }
 }
 
+///Core_v5.3.pdf#G41.783004
+pub enum ChSel {
+    Unsupported = 0,
+    Supported = 1,
+}
+
 pub(crate) type Address = [u8;6];
 pub enum TxRxAdvAddress {
     Public(Address),
@@ -103,49 +113,9 @@ impl TxRxAdvAddress {
 pub type AdvA = TxRxAdvAddress;
 // type TargetA = TxRxAdvAddress;
 // type InitA = TxRxAdvAddress;
-// type ScanA = Address;
+type ScanA = TxRxAdvAddress;
 type AdvData<'a> = crate::gap::AdFields<'a>;
 
-pub struct AdvNonConnIndPdu<'a> {
-    pub adv_a: &'a AdvA,
-    pub adv_data: &'a AdvData<'a>,
-}
-impl<'a> AdvNonConnIndPdu<'a> {
-    /// returns the used slice of the destination buffer
-    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8] {
-        let mut pdu_size = 0;
-
-        const TYPE_SHIFT:usize = 0;
-        const TXADD_SHIFT:usize = 6;
-        buffer[0] = // base pdu type
-                    ((PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
-                    // txadd bit
-                    | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
-        pdu_size += 1;
-        
-        // skip a byte for length (will be set at end)
-        pdu_size += 1;
-
-        // write the AdvA
-        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
-
-        // append the adv_data
-        pdu_size += self.adv_data.write(&mut buffer[pdu_size..]);
-
-        // set the length
-        const PDU_HEADER_SIZE:usize = 2;
-        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
-
-        &buffer[0..pdu_size]
-    }
-}
-
-
-///Core_v5.3.pdf#G41.783004
-pub enum ChSel {
-    Unsupported = 0,
-    Supported = 1,
-}
 pub struct AdvIndPdu<'a> {
     pub ch_sel: ChSel,
     pub adv_a: &'a AdvA,
@@ -184,15 +154,123 @@ impl<'a> AdvIndPdu<'a> {
     }
 }
 
+// TODO pub struct AdvDirectInd
+
+pub struct AdvNonConnIndPdu<'a> {
+    pub adv_a: &'a AdvA,
+    pub adv_data: &'a AdvData<'a>,
+}
+impl<'a> AdvNonConnIndPdu<'a> {
+    /// returns the used slice of the destination buffer
+    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8] {
+        let mut pdu_size = 0;
+
+        const TYPE_SHIFT:usize = 0;
+        const TXADD_SHIFT:usize = 6;
+        buffer[0] = // base pdu type
+                    ((PDU_TYPE::ADV_NONCONN_IND as u8) << TYPE_SHIFT)
+                    // txadd bit
+                    | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
+        pdu_size += 1;
+        
+        // skip a byte for length (will be set at end)
+        pdu_size += 1;
+
+        // write the AdvA
+        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+
+        // append the adv_data
+        pdu_size += self.adv_data.write(&mut buffer[pdu_size..]);
+
+        // set the length
+        const PDU_HEADER_SIZE:usize = 2;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
+
+        &buffer[0..pdu_size]
+    }
+}
+
+// TODO pub struct AdvScanIndPdu
+// TODO pub struct AdvExtIndPdu
+
+pub struct ScanReqPdu<'a> {
+    pub scan_a: &'a ScanA,
+    pub adv_a: &'a AdvA,
+}
+#[allow(unused)]
+impl<'a> ScanReqPdu<'a> {
+    /// returns the used slice of the destination buffer
+    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8] {
+        let mut pdu_size = 0;
+
+        const TYPE_SHIFT:usize = 0;
+        const TXADD_SHIFT:usize = 6;
+        buffer[0] = // base pdu type
+                    ((PDU_TYPE::SCAN_REQ as u8) << TYPE_SHIFT)
+                    // txadd bit
+                    | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
+                    // TODO set the RXADD bit per the AdvA::advertiser address
+        pdu_size += 1;
+        
+        // skip a byte for length (will be set at end)
+        pdu_size += 1;
+
+        // append the ScanA
+        pdu_size += self.scan_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+
+        // append the AdvA
+        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+
+        // set the length
+        const PDU_HEADER_SIZE:usize = 2;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
+
+        &buffer[0..pdu_size]
+    }
+}
+
+
+pub struct ScanRspPdu<'a> {
+    pub adv_a: &'a AdvA,
+    pub scan_rsp_data: &'a AdvData<'a>,
+}
+impl<'a> ScanRspPdu<'a> {
+    /// returns the used slice of the destination buffer
+    pub(crate) fn write(&self, buffer: &'a mut [u8]) -> &'a [u8] {
+        let mut pdu_size = 0;
+
+        const TYPE_SHIFT:usize = 0;
+        const TXADD_SHIFT:usize = 6;
+        buffer[0] = // base pdu type
+                    ((PDU_TYPE::SCAN_RSP as u8) << TYPE_SHIFT)
+                    // txadd bit
+                    | (match self.adv_a { TxRxAdvAddress::Public(..) => 0, _ => 1 } << TXADD_SHIFT);
+        pdu_size += 1;
+        
+        // skip a byte for length (will be set at end)
+        pdu_size += 1;
+
+        // write the AdvA
+        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+
+        // append the adv_data
+        pdu_size += self.scan_rsp_data.write(&mut buffer[pdu_size..]);
+
+        // set the length
+        const PDU_HEADER_SIZE:usize = 2;
+        buffer[1] = (pdu_size - PDU_HEADER_SIZE) as u8;
+
+        &buffer[0..pdu_size]
+    }
+}
+
+// TODO pub struct ConnectIndPdu
+// TODO pub struct AuxConnectRspPdu
 
 
 
-
-
-
-
-
-
+// archived code (to be deleted)
+// --------------------------------------------------------------------------------
 
 // pub enum AdvPdu<'a> {
 //     AdvInd(ChSel, &'a AdvA, &'a AdvData<'a>),

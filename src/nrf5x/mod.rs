@@ -1,3 +1,6 @@
+use core::convert::TryFrom;
+
+
 use nrf52832_hal::{pac};
 
 use crate::{link_layer};
@@ -78,6 +81,7 @@ impl Nrf5xHci {
         }
     }
 
+    /// get the hardware address
     fn get_address(ficr:FICR) -> link_layer::AdvA {
         let mut address:link_layer::Address = [0; 6];
         address[2..6].copy_from_slice( &ficr.deviceaddr[0].read().bits().to_be_bytes());
@@ -86,6 +90,16 @@ impl Nrf5xHci {
         return match ficr.deviceaddrtype.read().deviceaddrtype().variant() {
             DEVICEADDRTYPE_A::PUBLIC => link_layer::AdvA::Public(address),
             DEVICEADDRTYPE_A::RANDOM => link_layer::AdvA::RandomStatic(address),
+        }
+    }
+
+    /// get the current channel
+    pub fn channel(&self) -> link_layer::Channel {
+        // get the last channel from the hardware
+        let val = self.radio.datawhiteiv.read().bits() as u8;
+        match link_layer::Channel::try_from(val) {
+            Ok(channel) => channel,
+            Err(_) => panic!("illegal channel {:?}", val)
         }
     }
 

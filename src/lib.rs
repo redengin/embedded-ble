@@ -35,18 +35,17 @@ impl<'a> Ble<'a> {
     }
 
     /// send out a BlueTooth non-connectable advertisement
-    pub fn advertise(&self, channel: link_layer::Channel, pdu_type: link_layer::PDU_TYPE) -> bool {
+    pub fn advertise(&mut self, channel: link_layer::Channel, pdu_type: link_layer::PDU_TYPE) -> bool {
         // advertising channels are CH37, CH38, CH39
         debug_assert!([link_layer::Channel::CH37, link_layer::Channel::CH38, link_layer::Channel::CH39].contains(&channel));
 
-        let mut buffer:[u8; link_layer::ADV_PDU_SIZE_MAX] = [0; link_layer::ADV_PDU_SIZE_MAX];
         let pdu_slice= match pdu_type {
 
             link_layer::PDU_TYPE::ADV_NONCONN_IND => {
                     let pdu =
                             link_layer::AdvNonConnIndPdu{adv_a: &self.hci.adv_a,
                                                          adv_data: &self.ad_fields};
-                    pdu.write(&mut buffer)
+                    pdu.write(&mut self.buffer)
             }
 
             link_layer::PDU_TYPE::ADV_IND => {
@@ -54,7 +53,7 @@ impl<'a> Ble<'a> {
                         link_layer::AdvIndPdu{ch_sel: link_layer::ChSel::Unsupported,
                                               adv_a: &self.hci.adv_a,
                                               adv_data: &self.ad_fields};
-                pdu.write(&mut buffer)
+                pdu.write(&mut self.buffer)
             }
 
             _ => { panic!("not implemented") }
@@ -76,7 +75,7 @@ impl<'a> Ble<'a> {
     }
 
     /// handle a received packet
-    pub fn handle_packet(&self) {
+    pub fn handle_packet(&mut self) {
         // handle the hardware
         self.hci.handle_receive();
 
@@ -90,9 +89,17 @@ impl<'a> Ble<'a> {
         }
     }
 
-    fn handle_scan_request(&self) {
-        todo!()
+    fn handle_scan_request(&mut self) {
+        // TODO verify AdvA matches
+        let pdu = link_layer::ScanRspPdu{adv_a: &self.hci.adv_a, scan_rsp_data: &self.ad_fields};
+        let pdu_slice = pdu.write(&mut self.buffer);
+        debug_assert!(self.hci.send(pdu_slice,
+                                    self.hci.channel(),
+                                    link_layer::ADV_ACCESS_ADDRESS,
+                                    link_layer::ADV_CRCINIT,
+        ));
     }
+
 }
 
 
