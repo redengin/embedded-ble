@@ -81,12 +81,17 @@ impl<'a> Ble<'a> {
         self.hci.handle_receive();
 
         // determine pdu type
-        match link_layer::PDU_TYPE::pdu_type(&self.buffer) {
+        match link_layer::PDU_TYPE::of(&self.buffer) {
             Some(pdu_type) => match pdu_type {
-                _ => rprintln!("Unhandled PDU (hex) {:X?}", self.buffer),
+                link_layer::PDU_TYPE::SCAN_REQ => self.handle_scan_request(),
+                _ => rprintln!("Unhandled {:?} (hex) {:X?}", pdu_type, self.buffer),
             }
-            None => debug_assert!(false, "NonStandad PDU (hex) {:X?}", self.buffer)
+            None => debug_assert!(false, "NonStandard PDU_TYPE (hex) {:X?}", self.buffer)
         }
+    }
+
+    fn handle_scan_request(&self) {
+        todo!()
     }
 }
 

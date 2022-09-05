@@ -1,3 +1,6 @@
+use num_enum::TryFromPrimitive;
+use core::convert::TryFrom;
+
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
@@ -40,8 +43,10 @@ impl Channel {
     }
 }
 
-/// Core_v5.3.pdf#G41.403922
+#[derive(Debug, TryFromPrimitive)]
+#[repr(u8)]
 #[allow(non_camel_case_types)]
+/// Core_v5.3.pdf#G41.403922
 pub enum PDU_TYPE {
 // Advertising - sent by the Link Layer in the Advertising state and received by a Link Layer in the Scanning state or Initiating stat
     /// Connectable Scannable Undirected advertising
@@ -67,19 +72,12 @@ pub enum PDU_TYPE {
 }
 impl PDU_TYPE {
     /// return the type of a PDU
-    pub(crate) fn pdu_type(pdu: &[u8]) -> Option<PDU_TYPE> {
+    pub(crate) fn of(pdu: &[u8]) -> Option<PDU_TYPE> {
         const PDU_TYPE_MASK:u8 = 0b1111;
-        let pdu_type = pdu[0] & PDU_TYPE_MASK;
-        if pdu_type == (PDU_TYPE::ADV_IND as u8) { Some(PDU_TYPE::ADV_IND) }
-        else if pdu_type == (PDU_TYPE::ADV_DIRECT_IND as u8) { Some(PDU_TYPE::ADV_DIRECT_IND) }
-        else if pdu_type == (PDU_TYPE::ADV_NONCONN_IND as u8) { Some(PDU_TYPE::ADV_NONCONN_IND) }
-        else if pdu_type == (PDU_TYPE::ADV_SCAN_IND as u8) { Some(PDU_TYPE::ADV_SCAN_IND) }
-        else if pdu_type == (PDU_TYPE::ADV_EXT_IND as u8) { Some(PDU_TYPE::ADV_EXT_IND) }
-        else if pdu_type == (PDU_TYPE::SCAN_REQ as u8) { Some(PDU_TYPE::SCAN_REQ) }
-        else if pdu_type == (PDU_TYPE::SCAN_RSP as u8) { Some(PDU_TYPE::SCAN_RSP) }
-        else if pdu_type == (PDU_TYPE::CONNECT_IND as u8) { Some(PDU_TYPE::CONNECT_IND) }
-        else if pdu_type == (PDU_TYPE::AUX_CONNECT_RSP as u8) { Some(PDU_TYPE::AUX_CONNECT_RSP) }
-        else { None }
+        return match PDU_TYPE::try_from(pdu[0] & PDU_TYPE_MASK) {
+            Ok(pdu_type)  => Some(pdu_type),
+            Err(_)                  => None
+        }
     }
 }
 

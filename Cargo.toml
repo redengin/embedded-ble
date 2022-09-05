@@ -24,6 +24,7 @@ nrf5x-xxAB-package = []   # nrf5xx large, build.rs determines memory
 default = ["nrf5x-xxAB-package"]
 
 [dependencies]
+num_enum = { version="0.5.7", default-features=false }
 # TODO uninit = { version="0.5.0", default-features=false }
 nrf51-hal = { version="0.15", optional=true, features=["rt"] }
 # nrf52805-hal = { version="0.15", optional=true, features=["rt"] }
