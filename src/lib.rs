@@ -90,13 +90,17 @@ impl<'a> Ble<'a> {
     }
 
     fn handle_scan_request(&mut self) {
+        rprintln!("sending scan response");
         // TODO verify AdvA matches
-        let pdu = link_layer::ScanRspPdu{adv_a: &self.hci.adv_a, scan_rsp_data: &self.ad_fields};
+        // FIXME provide additional advertisement data
+        let ad_fields = gap::AdFields::default();
+        let pdu = link_layer::ScanRspPdu{adv_a: &self.hci.adv_a, scan_rsp_data: &ad_fields};
         let pdu_slice = pdu.write(&mut self.buffer);
-        debug_assert!(self.hci.send(pdu_slice,
-                                    self.hci.channel(),
-                                    link_layer::ADV_ACCESS_ADDRESS,
-                                    link_layer::ADV_CRCINIT,
+        debug_assert!(
+            self.hci.send(pdu_slice,
+                          self.hci.channel(),
+                          link_layer::ADV_ACCESS_ADDRESS,
+                          link_layer::ADV_CRCINIT,
         ));
     }
 
@@ -108,5 +112,11 @@ pub struct FakeHci {
     pub adv_a: link_layer::AdvA,
 }
 impl FakeHci {
-    pub fn send(&self, _: link_layer::Channel, _: link_layer::AccessAddress, _: link_layer::CrcInit, _: &[u8]) -> bool { true }
+    pub fn send(&self, _:&[u8], _:link_layer::Channel, _:link_layer::AccessAddress, _:link_layer::CrcInit) -> bool
+    { true }
+    pub fn listen(&self, _:&mut link_layer::PduBuffer, _:link_layer::Channel, _:link_layer::AccessAddress) -> bool
+    { true }
+    pub fn handle_receive(&self) { }
+    pub fn channel(&self) -> link_layer::Channel
+    { link_layer::Channel::CH0 }
 }

@@ -1,6 +1,8 @@
 use num_enum::{TryFromPrimitive};
 use core::convert::TryFrom;
 
+use rtt_target::rprintln;
+
 /// Core_v5.3.pdf#G41.405690
 /// actual max is 258, but most hardware is limited to 255
 pub const PDU_SIZE_MAX:usize = 255;
@@ -91,7 +93,8 @@ pub enum ChSel {
     Supported = 1,
 }
 
-pub(crate) type Address = [u8;6];
+const ADDRESS_LEN:usize = 6;
+pub(crate) type Address = [u8;ADDRESS_LEN];
 pub enum TxRxAdvAddress {
     Public(Address),
     RandomStatic(Address),
@@ -103,10 +106,10 @@ impl TxRxAdvAddress {
             TxRxAdvAddress::Public(address) 
             | TxRxAdvAddress::RandomStatic(address) 
             | TxRxAdvAddress::PrivateStatic(address) => {
-                buffer[0..6].copy_from_slice(address);
+                buffer[0..ADDRESS_LEN].copy_from_slice(address);
             }
         };
-        return 6;
+        return ADDRESS_LEN;
     }
 }
 /* type aliases to reflect naming in Bluetooth standard for PDUs */
@@ -251,7 +254,7 @@ impl<'a> ScanRspPdu<'a> {
         pdu_size += 1;
 
         // write the AdvA
-        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..(pdu_size+6)]);
+        pdu_size += self.adv_a.write_address(&mut buffer[pdu_size..]);
 
         // append the adv_data
         pdu_size += self.scan_rsp_data.write(&mut buffer[pdu_size..]);

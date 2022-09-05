@@ -155,7 +155,7 @@ impl Nrf5xHci {
     {
         assert!(pdu.len() < link_layer::PDU_SIZE_MAX);
 
-        rprintln!("Sending (hex) {:X?}", pdu);
+        rprintln!("Sending (hex)[{:?}] {:X?}", pdu.len(), pdu);
 
         // abort if the radio is busy
         if self.is_busy() { return false; }
